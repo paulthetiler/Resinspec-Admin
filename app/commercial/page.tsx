@@ -160,9 +160,9 @@ export default async function CommercialPage() {
       <section className="foundation-note commercial-placeholder">
         <span className="pulse" />
         <div>
-          <strong>Estimator slot reserved</strong>
+          <strong>Estimator connected</strong>
           <p>
-            The estimator will feed the same project commercial record later; it will not become a separate disconnected calculator.
+            Each project now has a versioned cost build-up. Accepted estimates can be adopted directly as the live job budget.
           </p>
         </div>
       </section>
