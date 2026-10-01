@@ -1241,3 +1241,107 @@ button:disabled { opacity:.48; cursor:not-allowed; }
   color:var(--muted);
   font-size:9px;
 }
+
+
+.variation-card,
+.invoice-card {
+  display:grid;
+  gap:12px;
+  padding:14px;
+  border:1px solid #e7ebed;
+  border-radius:11px;
+  background:#fbfcfc;
+}
+
+.variation-head {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.variation-head strong,
+.variation-head small {
+  display:block;
+}
+
+.variation-head strong {
+  color:var(--slate);
+  font-size:12px;
+}
+
+.variation-head small {
+  margin-top:4px;
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.45;
+}
+
+.variation-values {
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+}
+
+.variation-values span {
+  display:grid;
+  gap:3px;
+  padding:9px;
+  border-radius:8px;
+  background:white;
+  border:1px solid #edf0f1;
+}
+
+.variation-values small {
+  color:#7d8a90;
+  font-size:8px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+
+.variation-values strong {
+  color:var(--slate);
+  font-size:12px;
+}
+
+.variation-actions,
+.invoice-update-form {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.mini-input {
+  width:130px;
+  border:1px solid #d8dfe2;
+  border-radius:8px;
+  padding:7px 8px;
+  background:white;
+  color:var(--ink);
+  font-size:10px;
+}
+
+.invoice-update-form select {
+  border:1px solid #d8dfe2;
+  border-radius:8px;
+  padding:7px 8px;
+  background:white;
+  color:var(--ink);
+  font-size:10px;
+}
+
+@media (max-width: 620px) {
+  .variation-values {
+    grid-template-columns:1fr 1fr;
+  }
+
+  .mini-input {
+    width:100%;
+  }
+
+  .invoice-update-form > * {
+    flex:1 1 140px;
+  }
+}
