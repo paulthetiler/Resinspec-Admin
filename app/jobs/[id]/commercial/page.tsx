@@ -61,9 +61,17 @@ export default async function ProjectCommercialPage({
           <h1>{project.title}</h1>
           <p>Estimate, contingency, margin, applications and cash position for this job.</p>
         </div>
-        <Link className="secondary-button" href={`/jobs/${id}`}>
-          Back to job
-        </Link>
+        <div className="heading-actions">
+          <Link className="secondary-button" href={`/jobs/${id}/variations`}>
+            Variations
+          </Link>
+          <Link className="secondary-button" href={`/jobs/${id}/invoices`}>
+            Invoices
+          </Link>
+          <Link className="secondary-button" href={`/jobs/${id}`}>
+            Back to job
+          </Link>
+        </div>
       </section>
 
       {error ? <p className="form-error page-error">{error}</p> : null}
