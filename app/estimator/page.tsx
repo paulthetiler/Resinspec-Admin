@@ -1,0 +1,81 @@
+import Link from "next/link";
+import { requireAnyPermission } from "@/lib/access";
+
+export default async function EstimatorPage() {
+  const { supabase } = await requireAnyPermission(["commercial:view"]);
+
+  const { data: projects, error } = await supabase
+    .from("projects")
+    .select("id, reference, title, status, area_m2, updated_at")
+    .not("status", "in", "(lost,closed)")
+    .order("updated_at", { ascending: false });
+
+  return (
+    <div className="standalone-page">
+      <section className="page-heading">
+        <div>
+          <p className="eyebrow">Pricing</p>
+          <h1>Estimator</h1>
+          <p>
+            Open a project estimate, build the cost plan and keep every pricing revision against the job record.
+          </p>
+        </div>
+      </section>
+
+      {error ? (
+        <section className="panel">
+          <strong>Could not load projects.</strong>
+          <p className="muted-copy">{error.message}</p>
+        </section>
+      ) : null}
+
+      {!error && (!projects || projects.length === 0) ? (
+        <section className="panel">
+          <div className="empty-state">
+            <strong>No projects to estimate yet.</strong>
+            <p>Create a project first, then its estimate will appear here.</p>
+          </div>
+        </section>
+      ) : null}
+
+      {projects && projects.length > 0 ? (
+        <section className="table-card">
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Project</th>
+                  <th>Status</th>
+                  <th>Area</th>
+                  <th>Estimate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {projects.map((project) => (
+                  <tr key={project.id}>
+                    <td>
+                      <strong>{project.reference}</strong>
+                      <small>{project.title}</small>
+                    </td>
+                    <td>
+                      <span className="status-badge">{project.status}</span>
+                    </td>
+                    <td>{project.area_m2 ? `${project.area_m2} m²` : "—"}</td>
+                    <td>
+                      <Link
+                        className="primary-button"
+                        href={`/jobs/${project.id}/estimate`}
+                      >
+                        Open estimate
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+    </div>
+  );
+}
