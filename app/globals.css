@@ -185,11 +185,14 @@ button:disabled { opacity:.48; cursor:not-allowed; }
   .panel { min-height:260px; padding:18px; }
   .mobile-nav {
     position:fixed; inset:auto 0 0; height:58px; background:rgba(255,255,255,.96);
-    border-top:1px solid var(--light); z-index:30; display:grid; grid-template-columns:repeat(5,1fr);
+    border-top:1px solid var(--light); z-index:30; display:flex;
+    overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none;
     backdrop-filter:blur(14px);
   }
+  .mobile-nav::-webkit-scrollbar { display:none; }
   .mobile-nav a {
-    display:grid; place-items:center; padding:4px 2px; text-align:center; color:#78858c;
+    flex:0 0 72px;
+    display:grid; place-items:center; padding:4px 5px; text-align:center; color:#78858c;
     font-size:9px; font-weight:800;
   }
   .mobile-nav a.is-active { color:var(--slate); box-shadow:inset 0 2px 0 var(--teal); }
