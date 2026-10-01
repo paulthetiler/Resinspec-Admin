@@ -33,18 +33,27 @@ export async function updateSession(request: NextRequest) {
 
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
+  const pathname = request.nextUrl.pathname;
 
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
-  ) {
+  if (!user && !pathname.startsWith("/login") && !pathname.startsWith("/auth")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  if (user && request.nextUrl.pathname === "/login") {
+  if (!user) {
+    return response;
+  }
+
+  const { data: role } = await supabase.rpc("current_app_role");
+
+  if (!role && !pathname.startsWith("/unauthorised") && !pathname.startsWith("/auth")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/unauthorised";
+    return NextResponse.redirect(url);
+  }
+
+  if (role && (pathname === "/login" || pathname === "/unauthorised")) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);
