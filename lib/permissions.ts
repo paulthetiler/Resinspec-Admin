@@ -14,6 +14,8 @@ export type Permission =
   | "jobs:edit"
   | "survey:view"
   | "survey:edit"
+  | "quote:view"
+  | "quote:edit"
   | "technical:view"
   | "technical:edit"
   | "documents:view"
@@ -37,6 +39,8 @@ export const rolePermissions: Record<Role, Permission[]> = {
     "jobs:edit",
     "survey:view",
     "survey:edit",
+    "quote:view",
+    "quote:edit",
     "technical:view",
     "technical:edit",
     "documents:view",
@@ -58,6 +62,8 @@ export const rolePermissions: Record<Role, Permission[]> = {
     "jobs:edit",
     "survey:view",
     "survey:edit",
+    "quote:view",
+    "quote:edit",
     "technical:view",
     "documents:view",
     "documents:edit",
@@ -72,6 +78,8 @@ export const rolePermissions: Record<Role, Permission[]> = {
     "jobs:edit",
     "survey:view",
     "survey:edit",
+    "quote:view",
+    "quote:edit",
     "technical:view",
     "documents:view",
     "qa:view",
