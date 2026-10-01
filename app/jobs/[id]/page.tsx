@@ -142,6 +142,12 @@ export default async function JobPage({ params }: JobPageProps) {
             </>
           ) : null}
 
+          {can(role, "quote:view") ? (
+            <Link className="secondary-button" href={`/jobs/${id}/quote`}>
+              Quote
+            </Link>
+          ) : null}
+
           {can(role, "commercial:view") ? (
             <>
               <Link className="secondary-button" href={`/jobs/${id}/estimate`}>\n                Estimate\n              </Link>\n              <Link className="secondary-button" href={`/jobs/${id}/commercial`}>
