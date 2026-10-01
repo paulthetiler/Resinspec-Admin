@@ -46,6 +46,16 @@ export function DocumentUpload({ projectId }: Props) {
     const acknowledgementRequired =
       form.get("acknowledgement_required") === "on";
 
+    const { data: previous } = await supabase
+      .from("documents")
+      .select("version")
+      .eq("project_id", projectId)
+      .eq("document_type", documentType)
+      .eq("title", title || file.name)
+      .order("version", { ascending: false })
+      .limit(1);
+
+    const version = (previous?.[0]?.version ?? 0) + 1;
     const path = `${projectId}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
 
     const upload = await supabase.storage
@@ -65,7 +75,7 @@ export function DocumentUpload({ projectId }: Props) {
       project_id: projectId,
       document_type: documentType,
       title: title || file.name,
-      version: 1,
+      version,
       status: "draft",
       storage_path: path,
       file_name: file.name,
