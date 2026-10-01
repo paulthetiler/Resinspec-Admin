@@ -74,7 +74,7 @@ export default async function RamsPage({
           .order("step_order"),
         supabase
           .from("rams_acknowledgements")
-          .select("user_id, acknowledged_at, profiles:user_id(full_name)")
+          .select("user_id, acknowledged_at")
           .eq("rams_id", rams.id),
         supabase.auth.getClaims(),
       ])
@@ -88,6 +88,23 @@ export default async function RamsPage({
   const currentUserId = claimsResult.data?.claims?.sub ?? "";
   const selfAck = (acks || []).find((ack) => ack.user_id === currentUserId);
   const canApprove = editable && (role === "owner" || role === "supervisor");
+
+  const acknowledgementUserIds = (acks || []).map((ack) => ack.user_id);
+  const { data: acknowledgementProfiles } =
+    acknowledgementUserIds.length > 0 &&
+    (role === "owner" || role === "office" || role === "supervisor")
+      ? await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", acknowledgementUserIds)
+      : { data: [] as Array<{ id: string; full_name: string }> };
+
+  const profileById = new Map(
+    (acknowledgementProfiles || []).map((profile) => [
+      profile.id,
+      profile.full_name,
+    ])
+  );
 
   return (
     <div className="standalone-page rams-page">
@@ -447,20 +464,15 @@ export default async function RamsPage({
 
             {acks && acks.length > 0 && (role === "owner" || role === "office" || role === "supervisor") ? (
               <div className="compact-log">
-                {acks.map((ack) => {
-                  const profile = Array.isArray(ack.profiles)
-                    ? ack.profiles[0]
-                    : ack.profiles;
-                  return (
-                    <div key={ack.user_id}>
-                      <span>
-                        <strong>{profile?.full_name || "Crew member"}</strong>
-                        <small>Briefing acknowledged</small>
-                      </span>
-                      <small>{dateTime(ack.acknowledged_at)}</small>
-                    </div>
-                  );
-                })}
+                {acks.map((ack) => (
+                  <div key={ack.user_id}>
+                    <span>
+                      <strong>{profileById.get(ack.user_id) || "Crew member"}</strong>
+                      <small>Briefing acknowledged</small>
+                    </span>
+                    <small>{dateTime(ack.acknowledged_at)}</small>
+                  </div>
+                ))}
               </div>
             ) : null}
           </section>
