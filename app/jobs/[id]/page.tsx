@@ -80,6 +80,9 @@ export default async function JobPage({ params }: JobPageProps) {
               <Link className="secondary-button" href={`/jobs/${id}/edit`}>
                 Edit project
               </Link>
+              <Link className="secondary-button" href={`/jobs/${id}/survey`}>
+                Survey
+              </Link>
               <Link className="secondary-button" href={`/jobs/${id}/crew`}>
                 Crew
               </Link>
