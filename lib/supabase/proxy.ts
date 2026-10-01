@@ -37,8 +37,7 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const publicPath =
     pathname.startsWith("/login") ||
-    pathname.startsWith("/auth") ||
-    pathname.startsWith("/setup");
+    pathname.startsWith("/auth");
 
   if (!user && !publicPath) {
     const url = request.nextUrl.clone();
@@ -90,8 +89,7 @@ export async function updateSession(request: NextRequest) {
   if (
     role &&
     (pathname === "/login" ||
-      pathname === "/unauthorised" ||
-      pathname.startsWith("/setup"))
+      pathname === "/unauthorised")
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
