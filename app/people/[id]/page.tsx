@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAnyPermission } from "@/lib/access";
 import { can } from "@/lib/permissions";
+import { PersonAccessControl } from "@/components/person-access-control";
 
 type PersonPageProps = {
   params: Promise<{ id: string }>;
@@ -34,6 +35,15 @@ export default async function PersonPage({ params }: PersonPageProps) {
           .maybeSingle()
       ).data
     : null;
+
+  const currentAccessRole =
+    role === "owner" && person.user_id
+      ? (
+          await supabase.rpc("get_user_role", {
+            target_user_id: person.user_id,
+          })
+        ).data
+      : null;
 
   const { data: assignments } = await supabase
     .from("project_assignments")
@@ -138,6 +148,23 @@ export default async function PersonPage({ params }: PersonPageProps) {
           )}
         </section>
       </div>
+
+      {role === "owner" ? (
+        <section className="panel">
+          <div className="panel-head">
+            <div>
+              <p className="eyebrow">Owner only</p>
+              <h2>App access</h2>
+            </div>
+          </div>
+          <PersonAccessControl
+            personId={person.id}
+            email={person.email}
+            userId={person.user_id}
+            currentRole={currentAccessRole}
+          />
+        </section>
+      ) : null}
 
       {can(role, "financials:view") ? (
         <section className="panel">
