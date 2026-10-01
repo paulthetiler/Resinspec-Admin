@@ -1,83 +1,115 @@
 # ResinSpec Admin
 
-Private operations application for ResinSpec Flooring.
+Private operations system for ResinSpec Flooring.
 
-## Current stage
+## Current state
 
-Deployment trigger: Git-connected Vercel project.
-
-The operational foundation is connected to a dedicated Supabase project.
+The backend foundation is live in a dedicated Supabase project and deploys automatically from `main` to the canonical Vercel project `resinspec-admin`.
 
 Implemented:
-- Next.js 16 / React 19 application structure
-- ResinSpec admin visual system
+
+- Next.js 16 / React 19 application
 - Supabase SSR authentication foundation
 - Owner / Office / Commercial / Supervisor / Installer roles
 - Row-level database security
 - Role-aware navigation and route protection
-- Today dashboard shell
+- Live Today exception dashboard
+- Pipeline
+- Clients and sites
+- Resin technical survey
+- Versioned estimator
+- Client quote workflow and printable quote view
 - Live Jobs register
-- New Project workflow
-- Automatic human-readable project references
-- Project detail page
-- Technical system data structure
-- Documents / RAMS / QA data structure
-- People / assignment data structure
-- Commercial data isolated from normal office / installer access
-- Estimator placeholder
-- Audit-event data structure
-- CI build-verification workflow
+- Project editing
+- Crew allocation
+- Worker-facing site brief
+- Versioned technical-system library
+- Private project document storage
+- Document revision / approval / supersede workflow
+- Structured RAMS with approval and crew acknowledgement
+- QA hold points
+- Moisture / environmental readings
+- Batch / mix traceability
+- People / workforce records
+- Owner-issued staff app access
+- Forced password change for new staff
+- Variations
+- Applications / invoices
+- Debtor and overdue visibility
+- Snag register
+- Handover record
+- Restricted commercial job controls
+- Automatic 5% estimator contingency default
+- Automatic commercial roll-ups
+- Automatic project audit trail
 
-## Core architecture
+## Architecture principle
 
 One project record is the source of truth.
 
-Survey, client/site information, system selection, crew allocation, RAMS, QA, photos, commercial records and handover all attach to the same project rather than becoming separate disconnected systems.
+Enquiry, survey, estimate, quote, client/site information, technical-system revision, crew, RAMS, documents, QA, batches, variations, invoicing, handover and audit history all attach to the same project.
 
-## Access model
+Do not rebuild any of these as isolated spreadsheets or disconnected mini-apps unless there is a strong integration reason.
 
-- Owner: full access
-- Office: operational access without company financials
-- Commercial: estimating / commercial / job access
-- Supervisor: assigned jobs, technical, documents and QA
-- Installer: assigned jobs, technical instructions, documents and QA
+## Roles
 
-Database row-level security backs up the UI permissions.
+- **Owner** — full system access.
+- **Office** — pipeline, customers, jobs, survey, quote, documents, RAMS and operational controls. No internal commercial/margin access.
+- **Commercial** — estimating, quote, project commercial data, variations, applications/invoices and operational job access.
+- **Supervisor** — assigned jobs, survey, technical, documents, RAMS, QA, crew execution and handover controls.
+- **Installer** — assigned jobs only, site brief, approved survey/technical information, approved documents/RAMS, QA, readings, batch logs and snags.
+
+UI permissions are backed by Supabase RLS. Sensitive data is not protected merely by hiding menu items.
 
 ## Authentication
 
-The initial owner bootstrap address is `paul@resinspec.uk`.
+There is no public signup.
 
-Unknown addresses cannot create accounts through the app. Once the owner account exists, future staff access should be issued deliberately.
+Future staff accounts are created from the Owner's People area. New staff receive a temporary password and are forced to replace it at first sign-in.
 
-## Deployment requirements
+The initial Owner auth user still needs one controlled bootstrap action before first live login.
 
-The deployment needs:
+## Deployment
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=<ResinSpec Admin project URL>
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable key>
-```
+Canonical Vercel project:
 
-Do not commit secrets, service-role keys, live personnel records or private project documents to GitHub.
+`resinspec-admin`
 
-## Remaining before first live login
+Deployments are triggered automatically from GitHub `main`.
 
-1. Deploy/connect this repo to its Vercel project.
-2. Add the two public Supabase environment values to Vercel.
-3. Configure the Supabase Auth Site URL / redirect URL for the deployed admin domain.
-4. Configure the Supabase magic-link email template for the SSR confirmation route.
-5. Sign in once with `paul@resinspec.uk` to bootstrap the Owner account.
+Supabase project:
 
-## Next build phases
+`ResinSpec Admin` in `eu-west-2`.
 
-1. Client and site records
-2. Project editing and crew assignment
-3. Technical-system library UI
-4. Private project document storage
-5. RAMS / QA workflows
-6. People / competence / expiry controls
-7. Commercial job record
-8. Estimator
-9. Variations / applications / invoices
-10. Management reporting and cash-runway dashboard
+The repository contains only public Supabase connection values. Never commit service-role / secret keys, passwords, private project documents or personnel-sensitive data.
+
+## Commercial rules already encoded
+
+- Estimator contingency defaults to 5%.
+- Sell price is calculated from risk-adjusted cost and target margin.
+- Approved variations roll into project value.
+- Issued invoice/application totals and payments roll into project commercial totals.
+- Accepted quotes move the project to Won.
+- Accepted quotes created from an estimate adopt that estimate as the job commercial budget.
+- Office users cannot read internal cost or margin data.
+
+## Still intentionally not built
+
+- Full accounting package / bank integration
+- Payroll
+- Fleet / GPS tracking
+- Stock-control system
+- General internal chat
+- Large HR suite
+- Customer portal
+- AI features without a concrete operational use
+- Manufacturer/system pricing assumptions that have not been validated through training or live jobs
+
+## Next practical work
+
+- Bootstrap the first Owner auth account.
+- Put the final admin domain on the canonical Vercel project.
+- Load verified manufacturer systems after training.
+- Test the complete workflow using dummy projects and each user role.
+- Add backup/export procedures.
+- Refine estimator categories and production rates from actual completed jobs.
