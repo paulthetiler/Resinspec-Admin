@@ -564,3 +564,317 @@ button:disabled { opacity:.48; cursor:not-allowed; }
   .form-actions { justify-content:stretch; }
   .form-actions > * { flex:1; }
 }
+
+
+.heading-actions {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.section-divider {
+  margin-top:6px;
+  padding-top:18px;
+  border-top:1px solid var(--light);
+}
+
+.section-divider > span {
+  color:#6e7d84;
+  font-size:9px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+
+.stack-list {
+  display:grid;
+  gap:8px;
+}
+
+.stack-row {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  min-width:0;
+  padding:12px 13px;
+  border:1px solid #e7ebed;
+  border-radius:10px;
+  background:#fbfcfc;
+}
+
+.stack-row > span {
+  min-width:0;
+}
+
+.stack-row strong,
+.stack-row small {
+  display:block;
+}
+
+.stack-row strong {
+  color:var(--slate);
+  font-size:12px;
+}
+
+.stack-row small {
+  margin-top:3px;
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.4;
+}
+
+.stack-row-action {
+  align-items:flex-start;
+}
+
+.text-button {
+  border:0;
+  background:transparent;
+  padding:6px 4px;
+  color:#497d76;
+  font-size:10px;
+  font-weight:800;
+  cursor:pointer;
+  white-space:nowrap;
+}
+
+.danger-text {
+  color:#9b4747;
+}
+
+.compact-form {
+  display:grid;
+  gap:13px;
+}
+
+.full-button {
+  width:100%;
+}
+
+.page-error {
+  margin-bottom:16px;
+}
+
+.setup-panels {
+  margin-top:16px;
+  align-items:start;
+}
+
+.technical-critical {
+  border-color:#d7e8e5;
+  background:#fbfdfd;
+}
+
+.document-row {
+  align-items:center;
+}
+
+.document-main {
+  flex:1;
+}
+
+.row-actions {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.check-row {
+  display:flex;
+  align-items:center;
+  gap:9px;
+  min-height:44px;
+  color:var(--ink);
+  font-size:11px;
+  font-weight:700;
+}
+
+.check-row input {
+  width:18px;
+  height:18px;
+}
+
+.upload-message {
+  margin:0;
+  color:#587078;
+  font-size:11px;
+}
+
+.qa-panel {
+  margin-bottom:16px;
+}
+
+.qa-list {
+  display:grid;
+  gap:8px;
+}
+
+.qa-row {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:14px;
+  align-items:center;
+  padding:13px;
+  border:1px solid #e7ebed;
+  border-radius:10px;
+  background:#fbfcfc;
+}
+
+.qa-row-main {
+  display:flex;
+  align-items:flex-start;
+  gap:11px;
+  min-width:0;
+}
+
+.qa-row-main > div {
+  min-width:0;
+}
+
+.qa-row-main strong,
+.qa-row-main small {
+  display:block;
+}
+
+.qa-row-main strong {
+  color:var(--slate);
+  font-size:12px;
+}
+
+.qa-row-main small {
+  margin-top:4px;
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.45;
+}
+
+.qa-complete {
+  background:#fff7df;
+  color:#81651f;
+}
+
+.qa-accepted {
+  background:#edf7f3;
+  color:#4e7c70;
+}
+
+.qa-rejected {
+  background:#fff0f0;
+  color:#944646;
+}
+
+.qa-actions {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+}
+
+.inline-note-form {
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+.inline-note-form input {
+  width:150px;
+  border:1px solid #d8dfe2;
+  border-radius:8px;
+  padding:8px 9px;
+  background:white;
+  color:var(--ink);
+  font-size:11px;
+}
+
+.inline-actions {
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+
+.compact-log {
+  display:grid;
+  gap:0;
+  margin-top:18px;
+  border-top:1px solid var(--light);
+}
+
+.compact-log > div {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:14px;
+  padding:10px 0;
+  border-bottom:1px solid #edf0f1;
+}
+
+.compact-log span {
+  min-width:0;
+}
+
+.compact-log strong,
+.compact-log small {
+  display:block;
+}
+
+.compact-log strong {
+  color:var(--slate);
+  font-size:11px;
+}
+
+.compact-log small {
+  color:var(--muted);
+  font-size:9px;
+  line-height:1.4;
+}
+
+@media (max-width: 720px) {
+  .heading-actions {
+    justify-content:flex-start;
+  }
+
+  .page-heading {
+    flex-direction:column;
+  }
+
+  .page-heading > .heading-actions,
+  .page-heading > .secondary-button {
+    width:100%;
+  }
+
+  .heading-actions > a {
+    flex:1 1 calc(50% - 8px);
+  }
+
+  .qa-row {
+    grid-template-columns:1fr;
+  }
+
+  .qa-actions {
+    justify-content:flex-start;
+  }
+
+  .inline-note-form {
+    width:100%;
+    flex-wrap:wrap;
+  }
+
+  .inline-note-form input {
+    flex:1 1 180px;
+    width:auto;
+    min-width:0;
+  }
+
+  .document-row {
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .row-actions {
+    width:100%;
+    justify-content:flex-start;
+  }
+}
