@@ -150,7 +150,10 @@ export default async function JobPage({ params }: JobPageProps) {
 
           {can(role, "commercial:view") ? (
             <>
-              <Link className="secondary-button" href={`/jobs/${id}/estimate`}>\n                Estimate\n              </Link>\n              <Link className="secondary-button" href={`/jobs/${id}/commercial`}>
+              <Link className="secondary-button" href={`/jobs/${id}/estimate`}>
+                Estimate
+              </Link>
+              <Link className="secondary-button" href={`/jobs/${id}/commercial`}>
                 Commercial
               </Link>
               <Link className="secondary-button" href={`/jobs/${id}/variations`}>
