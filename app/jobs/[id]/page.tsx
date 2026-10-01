@@ -94,6 +94,11 @@ export default async function JobPage({ params }: JobPageProps) {
                   Actions
                 </Link>
               ) : null}
+              {can(role, "commercial:view") ? (
+                <Link className="secondary-button" href={`/jobs/${id}/commercial`}>
+                  Commercial
+                </Link>
+              ) : null}
             </>
           ) : null}
           <Link className="secondary-button" href="/jobs">
