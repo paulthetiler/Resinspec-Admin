@@ -121,9 +121,14 @@ export default async function JobPage({ params }: JobPageProps) {
           ) : null}
 
           {can(role, "qa:view") ? (
-            <Link className="secondary-button" href={`/jobs/${id}/qa`}>
-              QA
-            </Link>
+            <>
+              <Link className="secondary-button" href={`/jobs/${id}/qa`}>
+                QA
+              </Link>
+              <Link className="secondary-button" href={`/jobs/${id}/handover`}>
+                Handover
+              </Link>
+            </>
           ) : null}
 
           {can(role, "dashboard:view") ? (
@@ -138,9 +143,17 @@ export default async function JobPage({ params }: JobPageProps) {
           ) : null}
 
           {can(role, "commercial:view") ? (
-            <Link className="secondary-button" href={`/jobs/${id}/commercial`}>
-              Commercial
-            </Link>
+            <>
+              <Link className="secondary-button" href={`/jobs/${id}/commercial`}>
+                Commercial
+              </Link>
+              <Link className="secondary-button" href={`/jobs/${id}/variations`}>
+                Variations
+              </Link>
+              <Link className="secondary-button" href={`/jobs/${id}/invoices`}>
+                Invoices
+              </Link>
+            </>
           ) : null}
 
           <Link className="secondary-button" href="/jobs">
