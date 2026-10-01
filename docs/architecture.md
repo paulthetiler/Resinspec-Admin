@@ -245,10 +245,9 @@ Current exclusions:
 
 ## Outstanding foundation items
 
-1. Create the initial Owner auth user.
-2. Assign the final admin domain.
-3. Role-test with separate dummy Owner/Office/Commercial/Supervisor/Installer accounts.
-4. Run end-to-end dummy project tests.
-5. Add formal backup/export runbook.
-6. Add real manufacturer systems and controlled TDS/SDS after training.
-7. Feed completed estimate-versus-actual data back into estimator standards.
+1. Assign the final admin domain.
+2. Role-test with separate dummy Owner/Office/Commercial/Supervisor/Installer accounts.
+3. Run end-to-end dummy project tests.
+4. Add formal backup/export runbook.
+5. Add real manufacturer systems and controlled TDS/SDS after training.
+6. Feed completed estimate-versus-actual data back into estimator standards.
