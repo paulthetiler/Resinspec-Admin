@@ -1,11 +1,11 @@
 import { login } from "./actions";
 
 type LoginPageProps = {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { error } = await searchParams;
+  const { error, next } = await searchParams;
 
   return (
     <main className="login-page">
@@ -28,7 +28,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <p>Authorised ResinSpec staff and subcontractors only.</p>
         </div>
 
-        <form action={login} className="login-form">
+        <form action={login} className="login-form">\n          <input type="hidden" name="next" value={next ?? ""} />
           <label>
             <span>Email</span>
             <input
