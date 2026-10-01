@@ -1,6 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { AdminShell } from "@/components/admin-shell";
-import { canAccessNav, navigation } from "@/lib/navigation";\nimport type { Role } from "@/lib/permissions";\nimport { createClient } from "@/lib/supabase/server";
+import { canAccessNav, navigation } from "@/lib/navigation";
+import type { Role } from "@/lib/permissions";
+import { createClient } from "@/lib/supabase/server";
 
 type PageProps = {
   params: Promise<{ section?: string[] }>;
