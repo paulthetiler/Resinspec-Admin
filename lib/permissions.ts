@@ -12,6 +12,8 @@ export type Permission =
   | "jobs:view_all"
   | "jobs:view_assigned"
   | "jobs:edit"
+  | "survey:view"
+  | "survey:edit"
   | "technical:view"
   | "technical:edit"
   | "documents:view"
@@ -33,6 +35,8 @@ export const rolePermissions: Record<Role, Permission[]> = {
     "jobs:view_all",
     "jobs:view_assigned",
     "jobs:edit",
+    "survey:view",
+    "survey:edit",
     "technical:view",
     "technical:edit",
     "documents:view",
@@ -52,6 +56,8 @@ export const rolePermissions: Record<Role, Permission[]> = {
     "pipeline:edit",
     "jobs:view_all",
     "jobs:edit",
+    "survey:view",
+    "survey:edit",
     "technical:view",
     "documents:view",
     "documents:edit",
@@ -64,6 +70,8 @@ export const rolePermissions: Record<Role, Permission[]> = {
     "pipeline:edit",
     "jobs:view_all",
     "jobs:edit",
+    "survey:view",
+    "survey:edit",
     "technical:view",
     "documents:view",
     "qa:view",
@@ -75,6 +83,8 @@ export const rolePermissions: Record<Role, Permission[]> = {
   supervisor: [
     "dashboard:view",
     "jobs:view_assigned",
+    "survey:view",
+    "survey:edit",
     "technical:view",
     "documents:view",
     "documents:edit",
@@ -84,6 +94,7 @@ export const rolePermissions: Record<Role, Permission[]> = {
   ],
   installer: [
     "jobs:view_assigned",
+    "survey:view",
     "technical:view",
     "documents:view",
     "qa:view",
