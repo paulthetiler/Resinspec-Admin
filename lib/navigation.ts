@@ -31,6 +31,13 @@ export const navigation: NavItem[] = [
     permissions: ["jobs:view_all", "jobs:view_assigned"],
   },
   {
+    slug: "estimator",
+    label: "Estimator",
+    shortLabel: "Estimate",
+    description: "Project cost build-ups, pricing and estimate versions.",
+    permissions: ["commercial:view"],
+  },
+  {
     slug: "technical",
     label: "Technical",
     shortLabel: "Technical",
