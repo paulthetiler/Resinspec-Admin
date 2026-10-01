@@ -1,11 +1,11 @@
-import { requestLoginLink } from "./actions";
+import { login } from "./actions";
 
 type LoginPageProps = {
-  searchParams: Promise<{ error?: string; sent?: string }>;
+  searchParams: Promise<{ error?: string }>;
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { error, sent } = await searchParams;
+  const { error } = await searchParams;
 
   return (
     <main className="login-page">
@@ -25,10 +25,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <div className="login-copy">
           <p className="eyebrow">Private operations system</p>
           <h1>Sign in</h1>
-          <p>Enter your authorised work email and we will send a secure sign-in link.</p>
+          <p>Authorised ResinSpec staff and subcontractors only.</p>
         </div>
 
-        <form action={requestLoginLink} className="login-form">
+        <form action={login} className="login-form">
           <label>
             <span>Email</span>
             <input
@@ -39,18 +39,23 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             />
           </label>
 
-          {error ? <p className="form-error">{error}</p> : null}
-          {sent ? (
-            <p className="form-success">
-              Check your email. The sign-in link is single-use.
-            </p>
-          ) : null}
+          <label>
+            <span>Password</span>
+            <input
+              type="password"
+              name="password"
+              autoComplete="current-password"
+              required
+            />
+          </label>
 
-          <button type="submit">Send sign-in link</button>
+          {error ? <p className="form-error">{error}</p> : null}
+
+          <button type="submit">Sign in</button>
         </form>
 
         <p className="login-footnote">
-          Access is issued internally. Unknown email addresses cannot register.
+          Accounts are issued internally. There is no public registration.
         </p>
       </section>
     </main>
