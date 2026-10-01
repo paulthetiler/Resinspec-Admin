@@ -150,7 +150,12 @@ const moduleContent: Record<
 
 async function TodayPage({ role }: { role: Role }) {
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const next30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+  const commercialAccess = can(role, "commercial:view");
 
   const [
     pipelineResult,
@@ -159,6 +164,11 @@ async function TodayPage({ role }: { role: Role }) {
     actionCountResult,
     actionsResult,
     programmeResult,
+    activeProjectsResult,
+    ramsResult,
+    assignmentsResult,
+    peopleResult,
+    invoicesResult,
   ] = await Promise.all([
     supabase
       .from("projects")
@@ -190,6 +200,32 @@ async function TodayPage({ role }: { role: Role }) {
       .gte("programme_start", today)
       .order("programme_start", { ascending: true })
       .limit(5),
+    supabase
+      .from("projects")
+      .select("id, reference, title, status")
+      .in("status", ["prestart", "live", "handover"]),
+    supabase
+      .from("rams_documents")
+      .select("project_id, status")
+      .eq("status", "approved"),
+    supabase
+      .from("project_assignments")
+      .select("project_id"),
+    supabase
+      .from("people")
+      .select("id, full_name, cscs_expiry, insurance_expiry")
+      .eq("active", true),
+    commercialAccess
+      ? supabase
+          .from("invoices")
+          .select(
+            "id, project_id, reference, due_on, net_amount, paid_amount, status, projects(reference, title)"
+          )
+          .lt("due_on", today)
+          .not("status", "in", "(draft,paid,cancelled)")
+          .order("due_on", { ascending: true })
+          .limit(8)
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
   const dashboardCards = [
@@ -217,6 +253,87 @@ async function TodayPage({ role }: { role: Role }) {
 
   const actions = actionsResult.data || [];
   const programme = programmeResult.data || [];
+  const activeProjects = activeProjectsResult.data || [];
+  const approvedRams = new Set(
+    (ramsResult.data || []).map((row) => row.project_id)
+  );
+  const crewProjects = new Set(
+    (assignmentsResult.data || []).map((row) => row.project_id)
+  );
+
+  const exceptions: Array<{
+    key: string;
+    title: string;
+    detail: string;
+    href: string;
+    critical?: boolean;
+  }> = [];
+
+  for (const project of activeProjects) {
+    if (!crewProjects.has(project.id)) {
+      exceptions.push({
+        key: "crew-" + project.id,
+        title: "Crew not allocated",
+        detail: project.reference + " · " + project.title,
+        href: "/jobs/" + project.id + "/crew",
+        critical: project.status === "live",
+      });
+    }
+
+    if (!approvedRams.has(project.id)) {
+      exceptions.push({
+        key: "rams-" + project.id,
+        title: "Approved RAMS missing",
+        detail: project.reference + " · " + project.title,
+        href: "/jobs/" + project.id + "/rams",
+        critical: project.status === "live",
+      });
+    }
+  }
+
+  for (const person of peopleResult.data || []) {
+    const checks = [
+      { label: "CSCS", value: person.cscs_expiry },
+      { label: "Insurance", value: person.insurance_expiry },
+    ];
+
+    for (const check of checks) {
+      if (!check.value || check.value > next30) continue;
+      exceptions.push({
+        key: check.label + "-" + person.id,
+        title:
+          check.value < today
+            ? check.label + " expired"
+            : check.label + " expiring",
+        detail: person.full_name + " · " + check.value,
+        href: "/people/" + person.id,
+        critical: check.value < today,
+      });
+    }
+  }
+
+  for (const invoice of invoicesResult.data || []) {
+    const project = Array.isArray(invoice.projects)
+      ? invoice.projects[0]
+      : invoice.projects;
+    const outstanding =
+      Number(invoice.net_amount ?? 0) - Number(invoice.paid_amount ?? 0);
+
+    exceptions.push({
+      key: "invoice-" + invoice.id,
+      title: "Invoice overdue",
+      detail:
+        (project?.reference ? project.reference + " · " : "") +
+        invoice.reference +
+        " · £" +
+        Math.max(outstanding, 0).toFixed(0) +
+        " outstanding",
+      href: "/jobs/" + invoice.project_id + "/invoices",
+      critical: true,
+    });
+  }
+
+  exceptions.sort((a, b) => Number(Boolean(b.critical)) - Number(Boolean(a.critical)));
 
   function dueText(value: string | null) {
     if (!value) return "No due date";
@@ -274,18 +391,24 @@ async function TodayPage({ role }: { role: Role }) {
                   <Link
                     className="stack-row"
                     key={action.id}
-                    href={action.project_id ? `/jobs/${action.project_id}` : "/"}
+                    href={action.project_id ? "/jobs/" + action.project_id : "/"}
                   >
                     <span>
                       <strong>{action.title}</strong>
                       <small>
                         {action.category.replaceAll("_", " ")}
-                        {project?.reference ? ` · ${project.reference}` : ""}
-                        {project?.title ? ` · ${project.title}` : ""}
+                        {project?.reference ? " · " + project.reference : ""}
+                        {project?.title ? " · " + project.title : ""}
                       </small>
                     </span>
                     <span>
-                      <strong className={action.priority === "critical" ? "priority-critical" : ""}>
+                      <strong
+                        className={
+                          action.priority === "critical"
+                            ? "priority-critical"
+                            : ""
+                        }
+                      >
                         {action.priority}
                       </strong>
                       <small>{dueText(action.due_at)}</small>
@@ -297,7 +420,9 @@ async function TodayPage({ role }: { role: Role }) {
           ) : (
             <div className="empty-state">
               <strong>Nothing needs chasing.</strong>
-              <p>Open actions from jobs, surveys, QA and commercial work will surface here.</p>
+              <p>
+                Open actions from jobs, surveys, QA and commercial work will surface here.
+              </p>
             </div>
           )}
         </section>
@@ -313,14 +438,18 @@ async function TodayPage({ role }: { role: Role }) {
           {programme.length > 0 ? (
             <div className="timeline">
               {programme.map((project) => (
-                <Link key={project.id} href={`/jobs/${project.id}`}>
+                <Link key={project.id} href={"/jobs/" + project.id}>
                   <span />
                   <p>
-                    <strong>{project.reference} · {project.title}</strong>
+                    <strong>
+                      {project.reference} · {project.title}
+                    </strong>
                     <small>
                       {project.programme_start || "TBC"}
-                      {project.programme_end ? ` → ${project.programme_end}` : ""}
-                      {project.status ? ` · ${project.status}` : ""}
+                      {project.programme_end
+                        ? " → " + project.programme_end
+                        : ""}
+                      {project.status ? " · " + project.status : ""}
                     </small>
                   </p>
                 </Link>
@@ -335,12 +464,44 @@ async function TodayPage({ role }: { role: Role }) {
         </section>
       </div>
 
+      <section className="panel control-exceptions">
+        <div className="panel-head">
+          <div>
+            <p className="eyebrow">Controls</p>
+            <h2>Exceptions</h2>
+          </div>
+          <span className="count-badge">{exceptions.length}</span>
+        </div>
+
+        {exceptions.length > 0 ? (
+          <div className="stack-list">
+            {exceptions.slice(0, 12).map((item) => (
+              <Link className="stack-row" href={item.href} key={item.key}>
+                <span>
+                  <strong className={item.critical ? "priority-critical" : ""}>
+                    {item.title}
+                  </strong>
+                  <small>{item.detail}</small>
+                </span>
+                <span className="text-button">Open</span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state compact-empty">
+            <strong>No control exceptions.</strong>
+            <p>Crew, RAMS, workforce records and overdue invoices are clear.</p>
+          </div>
+        )}
+      </section>
+
       <section className="foundation-note">
         <span className="pulse" />
         <div>
           <strong>Live operations foundation</strong>
           <p>
-            Jobs, people, crew access, technical systems, private documents and QA now share the same project record.
+            Jobs, people, crew access, technical systems, private documents, QA,
+            RAMS, estimator and commercial records share the same project.
           </p>
         </div>
       </section>
