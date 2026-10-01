@@ -21,23 +21,33 @@ export async function createTechnicalSystem(formData: FormData) {
 
   const code = String(formData.get("code") ?? "").trim().toUpperCase();
   const name = String(formData.get("name") ?? "").trim();
-  const revision = Number(String(formData.get("revision") ?? "1"));
-  const status = String(formData.get("status") ?? "draft");
 
-  if (!code || !name || !Number.isInteger(revision) || revision < 1) {
-    redirect("/technical/new?error=Code%2C%20name%20and%20a%20valid%20revision%20are%20required");
+  if (!code || !name) {
+    redirect("/technical/new?error=System%20code%20and%20name%20are%20required");
   }
 
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const approved = status === "approved";
+  const { data: existing } = await supabase
+    .from("technical_systems")
+    .select("id")
+    .ilike("code", code)
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) {
+    redirect(
+      "/technical/" +
+        existing.id +
+        "?error=This%20system%20code%20already%20exists.%20Create%20a%20new%20revision%20from%20the%20existing%20system."
+    );
+  }
 
   const { data, error } = await supabase
     .from("technical_systems")
     .insert({
       code,
       name,
-      revision,
-      status,
+      revision: 1,
+      status: "draft",
       manufacturer: optionalText(formData.get("manufacturer")),
       category: optionalText(formData.get("category")),
       nominal_thickness_mm: optionalNumber(formData.get("nominal_thickness_mm")),
@@ -57,20 +67,17 @@ export async function createTechnicalSystem(formData: FormData) {
       chemical_notes: optionalText(formData.get("chemical_notes")),
       tds_reference: optionalText(formData.get("tds_reference")),
       sds_reference: optionalText(formData.get("sds_reference")),
-      approved_at: approved ? new Date().toISOString() : null,
-      approved_by: approved ? claimsData?.claims?.sub ?? null : null,
     })
     .select("id")
     .single();
 
   if (error || !data) {
     redirect(
-      `/technical/new?error=${encodeURIComponent(
-        error?.message || "Could not create the technical system"
-      )}`
+      "/technical/new?error=" +
+        encodeURIComponent(error?.message || "Could not create the technical system")
     );
   }
 
   revalidatePath("/technical");
-  redirect(`/technical/${data.id}`);
+  redirect("/technical/" + data.id);
 }
