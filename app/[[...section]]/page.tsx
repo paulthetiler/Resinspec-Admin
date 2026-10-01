@@ -1,7 +1,8 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AdminShell } from "@/components/admin-shell";
 import { canAccessNav, navigation } from "@/lib/navigation";
-import type { Role } from "@/lib/permissions";
+import { can, type Role } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 
 type PageProps = {
@@ -147,20 +148,99 @@ const moduleContent: Record<
   },
 };
 
-function TodayPage() {
+async function TodayPage({ role }: { role: Role }) {
+  const supabase = await createClient();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [
+    pipelineResult,
+    liveResult,
+    qaResult,
+    actionCountResult,
+    actionsResult,
+    programmeResult,
+  ] = await Promise.all([
+    supabase
+      .from("projects")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["lead", "qualifying", "survey", "estimating", "quoted"]),
+    supabase
+      .from("projects")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["prestart", "live", "handover"]),
+    supabase
+      .from("qa_records")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["open", "complete", "rejected"]),
+    supabase
+      .from("project_actions")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "open"),
+    supabase
+      .from("project_actions")
+      .select(
+        "id, title, category, priority, due_at, project_id, projects(reference, title)"
+      )
+      .eq("status", "open")
+      .order("due_at", { ascending: true, nullsFirst: false })
+      .limit(6),
+    supabase
+      .from("projects")
+      .select("id, reference, title, status, programme_start, programme_end")
+      .gte("programme_start", today)
+      .order("programme_start", { ascending: true })
+      .limit(5),
+  ]);
+
+  const dashboardCards = [
+    {
+      label: "Pipeline",
+      value: String(pipelineResult.count ?? 0),
+      note: "Lead to quoted",
+    },
+    {
+      label: "Live / pre-start",
+      value: String(liveResult.count ?? 0),
+      note: "Operational jobs",
+    },
+    {
+      label: "QA holds",
+      value: String(qaResult.count ?? 0),
+      note: "Open / awaiting review",
+    },
+    {
+      label: "Open actions",
+      value: String(actionCountResult.count ?? 0),
+      note: "Across accessible jobs",
+    },
+  ];
+
+  const actions = actionsResult.data || [];
+  const programme = programmeResult.data || [];
+
+  function dueText(value: string | null) {
+    if (!value) return "No due date";
+    return new Date(value).toLocaleString("en-GB", {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+  }
+
   return (
     <>
       <section className="page-heading">
         <div>
-          <p className="eyebrow">Thursday · ResinSpec control room</p>
+          <p className="eyebrow">ResinSpec control room</p>
           <h1>Today</h1>
           <p>
-            This screen will become the exception list: what needs attention, not a wall of meaningless charts.
+            The exception list: live work, holds and actions that actually need attention.
           </p>
         </div>
-        <button className="primary-button" type="button" disabled>
-          + New project
-        </button>
+        {can(role, "jobs:edit") ? (
+          <Link className="primary-button" href="/jobs/new">
+            + New project
+          </Link>
+        ) : null}
       </section>
 
       <section className="metric-grid" aria-label="Business overview">
@@ -180,15 +260,46 @@ function TodayPage() {
               <p className="eyebrow">Action centre</p>
               <h2>Needs attention</h2>
             </div>
-            <span className="count-badge">0</span>
+            <span className="count-badge">{actions.length}</span>
           </div>
-          <div className="empty-state">
-            <strong>Nothing to chase yet.</strong>
-            <p>
-              Once the database is connected this will surface missing RAMS, crew gaps, overdue quotes,
-              expiring competence records and commercial actions.
-            </p>
-          </div>
+
+          {actions.length > 0 ? (
+            <div className="stack-list">
+              {actions.map((action) => {
+                const project = Array.isArray(action.projects)
+                  ? action.projects[0]
+                  : action.projects;
+
+                return (
+                  <Link
+                    className="stack-row"
+                    key={action.id}
+                    href={action.project_id ? `/jobs/${action.project_id}` : "/"}
+                  >
+                    <span>
+                      <strong>{action.title}</strong>
+                      <small>
+                        {action.category.replaceAll("_", " ")}
+                        {project?.reference ? ` · ${project.reference}` : ""}
+                        {project?.title ? ` · ${project.title}` : ""}
+                      </small>
+                    </span>
+                    <span>
+                      <strong className={action.priority === "critical" ? "priority-critical" : ""}>
+                        {action.priority}
+                      </strong>
+                      <small>{dueText(action.due_at)}</small>
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <strong>Nothing needs chasing.</strong>
+              <p>Open actions from jobs, surveys, QA and commercial work will surface here.</p>
+            </div>
+          )}
         </section>
 
         <section className="panel">
@@ -198,22 +309,38 @@ function TodayPage() {
               <h2>Programme</h2>
             </div>
           </div>
-          <div className="timeline">
-            <div>
-              <span />
-              <p><strong>No jobs loaded</strong><small>Programme will populate from live projects.</small></p>
+
+          {programme.length > 0 ? (
+            <div className="timeline">
+              {programme.map((project) => (
+                <Link key={project.id} href={`/jobs/${project.id}`}>
+                  <span />
+                  <p>
+                    <strong>{project.reference} · {project.title}</strong>
+                    <small>
+                      {project.programme_start || "TBC"}
+                      {project.programme_end ? ` → ${project.programme_end}` : ""}
+                      {project.status ? ` · ${project.status}` : ""}
+                    </small>
+                  </p>
+                </Link>
+              ))}
             </div>
-          </div>
+          ) : (
+            <div className="empty-state compact-empty">
+              <strong>No upcoming programme loaded.</strong>
+              <p>Scheduled jobs will appear here automatically.</p>
+            </div>
+          )}
         </section>
       </div>
 
       <section className="foundation-note">
         <span className="pulse" />
         <div>
-          <strong>Foundation stage</strong>
+          <strong>Live operations foundation</strong>
           <p>
-            Navigation and access structure are now in place. Live data, authentication and document storage
-            are the next layer.
+            Jobs, people, crew access, technical systems, private documents and QA now share the same project record.
           </p>
         </div>
       </section>
@@ -277,7 +404,7 @@ export default async function AdminPage({ params }: PageProps) {
 
   return (
     <AdminShell activeSlug={slug} role={role}>
-      {slug === "" ? <TodayPage /> : <ModulePage slug={slug} />}
+      {slug === "" ? <TodayPage role={role} /> : <ModulePage slug={slug} />}
     </AdminShell>
   );
 }
