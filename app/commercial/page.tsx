@@ -21,6 +21,46 @@ export default async function CommercialPage() {
     .not("status", "in", "(lost,closed)")
     .order("updated_at", { ascending: false });
 
+
+  const today = new Date().toISOString().slice(0, 10);
+  const dueSoonCutoff = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+
+  const { data: invoiceRows } = await supabase
+    .from("invoices")
+    .select(
+      "id, project_id, reference, status, net_amount, paid_amount, due_on, projects(reference, title)"
+    )
+    .not("status", "in", "(draft,paid,cancelled)")
+    .order("due_on", { ascending: true, nullsFirst: false });
+
+  const debtors = (invoiceRows || []).map((invoice) => ({
+    ...invoice,
+    outstanding:
+      Number(invoice.net_amount ?? 0) - Number(invoice.paid_amount ?? 0),
+  }));
+
+  const overdue = debtors.filter(
+    (invoice) =>
+      invoice.due_on &&
+      invoice.due_on < today &&
+      invoice.outstanding > 0
+  );
+
+  const dueSoon = debtors.filter(
+    (invoice) =>
+      invoice.due_on &&
+      invoice.due_on >= today &&
+      invoice.due_on <= dueSoonCutoff &&
+      invoice.outstanding > 0
+  );
+
+  const overdueTotal = overdue.reduce(
+    (sum, invoice) => sum + invoice.outstanding,
+    0
+  );
+
   const rows = (projects || []).map((project) => {
     const commercial = Array.isArray(project.project_commercials)
       ? project.project_commercials[0]
@@ -156,6 +196,102 @@ export default async function CommercialPage() {
           </table>
         </div>
       </section>
+
+      <div className="two-column commercial-debtors">
+        <section className="panel">
+          <div className="panel-head">
+            <div>
+              <p className="eyebrow">Credit control</p>
+              <h2>Overdue</h2>
+            </div>
+            <span className="count-badge">{overdue.length}</span>
+          </div>
+
+          {overdue.length > 0 ? (
+            <div className="stack-list">
+              {overdue.map((invoice) => {
+                const project = Array.isArray(invoice.projects)
+                  ? invoice.projects[0]
+                  : invoice.projects;
+
+                return (
+                  <Link
+                    className="stack-row"
+                    href={"/jobs/" + invoice.project_id + "/invoices"}
+                    key={invoice.id}
+                  >
+                    <span>
+                      <strong>
+                        {project?.reference || "Project"} · {invoice.reference}
+                      </strong>
+                      <small>
+                        {project?.title || ""}
+                        {invoice.due_on ? " · due " + invoice.due_on : ""}
+                      </small>
+                    </span>
+                    <strong className="priority-critical">
+                      {money(invoice.outstanding)}
+                    </strong>
+                  </Link>
+                );
+              })}
+              <div className="debt-total">
+                <span>Total overdue</span>
+                <strong>{money(overdueTotal)}</strong>
+              </div>
+            </div>
+          ) : (
+            <div className="empty-state compact-empty">
+              <strong>No overdue invoices.</strong>
+              <p>Nothing currently needs chasing for payment.</p>
+            </div>
+          )}
+        </section>
+
+        <section className="panel">
+          <div className="panel-head">
+            <div>
+              <p className="eyebrow">Next 14 days</p>
+              <h2>Due soon</h2>
+            </div>
+            <span className="count-badge">{dueSoon.length}</span>
+          </div>
+
+          {dueSoon.length > 0 ? (
+            <div className="stack-list">
+              {dueSoon.map((invoice) => {
+                const project = Array.isArray(invoice.projects)
+                  ? invoice.projects[0]
+                  : invoice.projects;
+
+                return (
+                  <Link
+                    className="stack-row"
+                    href={"/jobs/" + invoice.project_id + "/invoices"}
+                    key={invoice.id}
+                  >
+                    <span>
+                      <strong>
+                        {project?.reference || "Project"} · {invoice.reference}
+                      </strong>
+                      <small>
+                        {project?.title || ""}
+                        {invoice.due_on ? " · due " + invoice.due_on : ""}
+                      </small>
+                    </span>
+                    <strong>{money(invoice.outstanding)}</strong>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="empty-state compact-empty">
+              <strong>Nothing due in the next 14 days.</strong>
+              <p>Upcoming payments will surface here automatically.</p>
+            </div>
+          )}
+        </section>
+      </div>
 
       <section className="foundation-note commercial-placeholder">
         <span className="pulse" />
