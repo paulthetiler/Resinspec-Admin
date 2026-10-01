@@ -1345,3 +1345,122 @@ button:disabled { opacity:.48; cursor:not-allowed; }
     flex:1 1 140px;
   }
 }
+
+
+.estimate-toolbar {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:16px;
+  padding:12px 14px;
+  border:1px solid var(--light);
+  border-radius:11px;
+  background:white;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:700;
+}
+
+.estimate-columns {
+  align-items:start;
+}
+
+.estimate-lines {
+  display:grid;
+  gap:8px;
+}
+
+.estimate-lines article {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  padding:12px 13px;
+  border:1px solid #e7ebed;
+  border-radius:10px;
+  background:#fbfcfc;
+}
+
+.estimate-lines article > div:first-child {
+  min-width:0;
+}
+
+.estimate-lines strong,
+.estimate-lines small {
+  display:block;
+}
+
+.estimate-lines article > div:first-child > strong {
+  margin-top:7px;
+  color:var(--slate);
+  font-size:12px;
+}
+
+.estimate-lines small {
+  margin-top:3px;
+  color:var(--muted);
+  font-size:9px;
+  line-height:1.45;
+}
+
+.estimate-line-total {
+  display:grid;
+  justify-items:end;
+  gap:4px;
+  flex:0 0 auto;
+}
+
+.estimate-line-total > strong {
+  color:var(--slate);
+  font-size:14px;
+}
+
+.estimate-formula {
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:8px 14px;
+  margin-top:18px;
+  padding:14px;
+  border-radius:10px;
+  background:#f6f9f9;
+  border:1px solid #e3ebea;
+}
+
+.estimate-formula span {
+  color:var(--muted);
+  font-size:10px;
+}
+
+.estimate-formula strong {
+  color:var(--slate);
+  font-size:12px;
+  text-align:right;
+}
+
+.estimate-history {
+  margin-top:16px;
+}
+
+@media (max-width: 620px) {
+  .estimate-toolbar {
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .estimate-toolbar .heading-actions {
+    width:100%;
+  }
+
+  .estimate-lines article {
+    flex-direction:column;
+  }
+
+  .estimate-line-total {
+    width:100%;
+    grid-auto-flow:column;
+    justify-content:space-between;
+    align-items:center;
+  }
+}
