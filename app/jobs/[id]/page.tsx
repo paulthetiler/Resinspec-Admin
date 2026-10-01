@@ -17,7 +17,7 @@ export default async function JobPage({ params }: JobPageProps) {
   const { data: project } = await supabase
     .from("projects")
     .select(
-      "id, reference, title, status, area_m2, programme_start, programme_end, scope_summary, next_action, next_action_due, clients(trading_name, legal_name), sites(name, town_city), technical_systems(code, name, manufacturer, revision)"
+      "id, reference, title, status, area_m2, programme_start, programme_end, scope_summary, next_action, next_action_due, clients(trading_name, legal_name), sites(name, address_line_1, address_line_2, town_city, postcode, access_notes, induction_notes, welfare_notes, power_notes, water_notes, waste_notes, known_hazards), technical_systems(code, name, manufacturer, revision, thickness, mixing_instructions, coverage_notes, pot_life_notes, cure_notes, application_limits, temperature_notes)"
     )
     .eq("id", id)
     .single();
@@ -62,6 +62,23 @@ export default async function JobPage({ params }: JobPageProps) {
     ? project.technical_systems[0]
     : project.technical_systems;
 
+  const siteAddress = site
+    ? [
+        site.address_line_1,
+        site.address_line_2,
+        site.town_city,
+        site.postcode,
+      ]
+        .filter(Boolean)
+        .join(", ")
+    : "";
+
+  const directionsUrl = siteAddress
+    ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+        siteAddress
+      )}`
+    : null;
+
   return (
     <div className="standalone-page">
       <section className="page-heading">
@@ -78,37 +95,51 @@ export default async function JobPage({ params }: JobPageProps) {
           {can(role, "jobs:edit") ? (
             <>
               <Link className="secondary-button" href={`/jobs/${id}/edit`}>
-                Edit project
-              </Link>
-              <Link className="secondary-button" href={`/jobs/${id}/survey`}>
-                Survey
+                Edit
               </Link>
               <Link className="secondary-button" href={`/jobs/${id}/crew`}>
                 Crew
               </Link>
+            </>
+          ) : null}
+
+          {can(role, "survey:view") ? (
+            <Link className="secondary-button" href={`/jobs/${id}/survey`}>
+              Survey
+            </Link>
+          ) : null}
+
+          {can(role, "documents:view") ? (
+            <>
               <Link className="secondary-button" href={`/jobs/${id}/rams`}>
                 RAMS
               </Link>
               <Link className="secondary-button" href={`/jobs/${id}/documents`}>
-                Documents
+                Files
               </Link>
-              <Link className="secondary-button" href={`/jobs/${id}/qa`}>
-                QA
-              </Link>
-              {can(role, "dashboard:view") ? (
-                <Link className="secondary-button" href={`/jobs/${id}/actions`}>
-                  Actions
-                </Link>
-              ) : null}
-              {can(role, "commercial:view") ? (
-                <Link className="secondary-button" href={`/jobs/${id}/commercial`}>
-                  Commercial
-                </Link>
-              ) : null}
             </>
           ) : null}
+
+          {can(role, "qa:view") ? (
+            <Link className="secondary-button" href={`/jobs/${id}/qa`}>
+              QA
+            </Link>
+          ) : null}
+
+          {can(role, "dashboard:view") ? (
+            <Link className="secondary-button" href={`/jobs/${id}/actions`}>
+              Actions
+            </Link>
+          ) : null}
+
+          {can(role, "commercial:view") ? (
+            <Link className="secondary-button" href={`/jobs/${id}/commercial`}>
+              Commercial
+            </Link>
+          ) : null}
+
           <Link className="secondary-button" href="/jobs">
-            Back to jobs
+            Jobs
           </Link>
         </div>
       </section>
@@ -131,6 +162,98 @@ export default async function JobPage({ params }: JobPageProps) {
           <strong>{documentCount ?? 0} / {qaCount ?? 0}</strong>
         </article>
       </section>
+
+      <div className="two-column site-brief-grid">
+        <section className="panel site-brief-panel">
+          <div className="panel-head">
+            <div>
+              <p className="eyebrow">Site</p>
+              <h2>Location & access</h2>
+            </div>
+            {directionsUrl ? (
+              <a
+                className="secondary-button"
+                href={directionsUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Directions
+              </a>
+            ) : null}
+          </div>
+
+          <dl className="detail-list">
+            <div>
+              <dt>Address</dt>
+              <dd>{siteAddress || "Address not added"}</dd>
+            </div>
+            <div>
+              <dt>Access</dt>
+              <dd>{site?.access_notes || "No access notes"}</dd>
+            </div>
+            <div>
+              <dt>Induction / permits</dt>
+              <dd>{site?.induction_notes || "No induction notes"}</dd>
+            </div>
+            <div>
+              <dt>Known hazards</dt>
+              <dd>{site?.known_hazards || "None recorded"}</dd>
+            </div>
+          </dl>
+
+          <div className="site-utilities">
+            <span><strong>Welfare</strong>{site?.welfare_notes || "—"}</span>
+            <span><strong>Power</strong>{site?.power_notes || "—"}</span>
+            <span><strong>Water</strong>{site?.water_notes || "—"}</span>
+            <span><strong>Waste</strong>{site?.waste_notes || "—"}</span>
+          </div>
+        </section>
+
+        <section className="panel technical-critical">
+          <div className="panel-head">
+            <div>
+              <p className="eyebrow">Site-critical technical</p>
+              <h2>Mixing & timing</h2>
+            </div>
+          </div>
+
+          {system ? (
+            <dl className="detail-list">
+              <div>
+                <dt>System</dt>
+                <dd>
+                  {system.code} · Rev {system.revision} · {system.name}
+                </dd>
+              </div>
+              <div>
+                <dt>Mixing</dt>
+                <dd>{system.mixing_instructions || "Not recorded"}</dd>
+              </div>
+              <div>
+                <dt>Pot life</dt>
+                <dd>{system.pot_life_notes || "Not recorded"}</dd>
+              </div>
+              <div>
+                <dt>Coverage</dt>
+                <dd>{system.coverage_notes || "Not recorded"}</dd>
+              </div>
+              <div>
+                <dt>Cure / recoat</dt>
+                <dd>{system.cure_notes || "Not recorded"}</dd>
+              </div>
+              <div>
+                <dt>Application limits</dt>
+                <dd>{system.application_limits || system.temperature_notes || "Not recorded"}</dd>
+              </div>
+            </dl>
+          ) : (
+            <div className="empty-state compact-empty">
+              <strong>No approved system assigned.</strong>
+              <p>Do not install until a technical system revision is attached to the project.</p>
+            </div>
+          )}
+        </section>
+      </div>
 
       <div className="two-column">
         <section className="panel">
