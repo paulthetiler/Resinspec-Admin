@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { can } from "@/lib/permissions";
 import { requireAnyPermission } from "@/lib/access";
 import { DocumentUpload } from "@/components/document-upload";
-import { acknowledgeDocument } from "./actions";
+import { acknowledgeDocument, setDocumentStatus } from "./actions";
 
 type ProjectDocumentsProps = {
   params: Promise<{ id: string }>;
@@ -110,6 +110,29 @@ export default async function ProjectDocumentsPage({
                     </span>
 
                     <div className="row-actions">
+                      {can(role, "documents:edit") && document.status === "draft" ? (
+                        <form action={setDocumentStatus}>
+                          <input type="hidden" name="project_id" value={id} />
+                          <input type="hidden" name="document_id" value={document.id} />
+                          <input type="hidden" name="status" value="approved" />
+                          <button className="text-button" type="submit">
+                            Approve
+                          </button>
+                        </form>
+                      ) : null}
+
+                      {can(role, "documents:edit") &&
+                      ["approved", "complete"].includes(document.status) ? (
+                        <form action={setDocumentStatus}>
+                          <input type="hidden" name="project_id" value={id} />
+                          <input type="hidden" name="document_id" value={document.id} />
+                          <input type="hidden" name="status" value="superseded" />
+                          <button className="text-button danger-text" type="submit">
+                            Supersede
+                          </button>
+                        </form>
+                      ) : null}
+
                       <Link
                         className="text-button"
                         href={`/documents/${document.id}/download`}
