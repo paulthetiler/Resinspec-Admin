@@ -70,12 +70,17 @@ export function AdminShell({ activeSlug, role, children }: AdminShellProps) {
           <div>
             <span className="mobile-brand">ResinSpec Admin</span>
           </div>
-          <div className="user-chip">
-            <span className="avatar">{roleLabels[role].slice(0, 2).toUpperCase()}</span>
-            <span>
-              <strong>Signed in</strong>
-              <small>{roleLabels[role]}</small>
-            </span>
+          <div className="user-controls">
+            <div className="user-chip">
+              <span className="avatar">{roleLabels[role].slice(0, 2).toUpperCase()}</span>
+              <span>
+                <strong>Signed in</strong>
+                <small>{roleLabels[role]}</small>
+              </span>
+            </div>
+            <form action="/auth/signout" method="post">
+              <button className="signout-button" type="submit">Sign out</button>
+            </form>
           </div>
         </header>
 
