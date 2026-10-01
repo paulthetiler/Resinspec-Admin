@@ -4,6 +4,8 @@ Private operations application for ResinSpec Flooring.
 
 ## Current stage
 
+Deployment trigger: Git-connected Vercel project.
+
 The operational foundation is connected to a dedicated Supabase project.
 
 Implemented:
