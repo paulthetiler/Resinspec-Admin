@@ -3,26 +3,23 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-const OWNER_BOOTSTRAP_EMAIL = "paul@resinspec.uk";
-
-export async function requestLoginLink(formData: FormData) {
+export async function login(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
 
-  if (!email) {
-    redirect("/login?error=Enter%20your%20email%20address");
+  if (!email || !password) {
+    redirect("/login?error=Enter%20your%20email%20and%20password");
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithOtp({
+  const { error } = await supabase.auth.signInWithPassword({
     email,
-    options: {
-      shouldCreateUser: email === OWNER_BOOTSTRAP_EMAIL,
-    },
+    password,
   });
 
   if (error) {
-    redirect("/login?error=That%20account%20is%20not%20authorised");
+    redirect("/login?error=Login%20details%20not%20recognised");
   }
 
-  redirect("/login?sent=1");
+  redirect("/");
 }
