@@ -87,7 +87,7 @@ export function AdminShell({ activeSlug, role, children }: AdminShellProps) {
         <main className="main-content">{children}</main>
 
         <nav className="mobile-nav" aria-label="Mobile admin navigation">
-          {visibleNavigation.slice(0, 5).map((item) => {
+          {visibleNavigation.map((item) => {
             const href = item.slug ? `/${item.slug}` : "/";
             const active = item.slug === activeSlug;
             return (
