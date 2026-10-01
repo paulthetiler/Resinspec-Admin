@@ -1,6 +1,6 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AdminShell } from "@/components/admin-shell";
-import { navigation } from "@/lib/navigation";
+import { canAccessNav, navigation } from "@/lib/navigation";\nimport type { Role } from "@/lib/permissions";\nimport { createClient } from "@/lib/supabase/server";
 
 type PageProps = {
   params: Promise<{ section?: string[] }>;
@@ -257,11 +257,24 @@ export default async function AdminPage({ params }: PageProps) {
   if (section.length > 1) notFound();
 
   const slug = section[0] ?? "";
-  const known = navigation.some((item) => item.slug === slug);
-  if (!known) notFound();
+  const item = navigation.find((navItem) => navItem.slug === slug);
+  if (!item) notFound();
+
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("current_app_role");
+  const role = data as Role | null;
+
+  if (!role || !["owner", "office", "commercial", "supervisor", "installer"].includes(role)) {
+    redirect("/unauthorised");
+  }
+
+  if (!canAccessNav(role, item)) {
+    const firstAllowed = navigation.find((navItem) => canAccessNav(role, navItem));
+    redirect(firstAllowed?.slug ? `/${firstAllowed.slug}` : "/");
+  }
 
   return (
-    <AdminShell activeSlug={slug}>
+    <AdminShell activeSlug={slug} role={role}>
       {slug === "" ? <TodayPage /> : <ModulePage slug={slug} />}
     </AdminShell>
   );
