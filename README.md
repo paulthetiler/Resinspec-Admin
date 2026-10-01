@@ -67,7 +67,7 @@ There is no public signup.
 
 Future staff accounts are created from the Owner's People area. New staff receive a temporary password and are forced to replace it at first sign-in.
 
-The initial Owner auth user still needs one controlled bootstrap action before first live login.
+The initial Owner auth account is bootstrapped, email-confirmed and active.
 
 ## Deployment
 
@@ -107,7 +107,6 @@ The repository contains only public Supabase connection values. Never commit ser
 
 ## Next practical work
 
-- Bootstrap the first Owner auth account.
 - Put the final admin domain on the canonical Vercel project.
 - Load verified manufacturer systems after training.
 - Test the complete workflow using dummy projects and each user role.
