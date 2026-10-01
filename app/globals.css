@@ -960,3 +960,152 @@ button:disabled { opacity:.48; cursor:not-allowed; }
     padding:7px 8px;
   }
 }
+
+
+.rams-page { padding-bottom:40px; }
+
+.rams-empty form { margin-top:16px; }
+
+.rams-statusbar {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:9px;
+  margin-bottom:16px;
+  padding:12px 14px;
+  border:1px solid var(--light);
+  border-radius:11px;
+  background:white;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:700;
+}
+
+.rams-section { margin-top:16px; }
+
+.risk-table-wrap {
+  overflow-x:auto;
+}
+
+.risk-table {
+  min-width:980px;
+}
+
+.risk-table td:nth-child(4) {
+  min-width:390px;
+  line-height:1.55;
+}
+
+.risk-score {
+  display:inline-grid;
+  place-items:center;
+  min-width:30px;
+  min-height:30px;
+  padding:4px;
+  border-radius:8px;
+  background:#fff1e8;
+  color:#8a4c2f;
+  font-weight:900;
+}
+
+.risk-score.residual {
+  background:#edf7f3;
+  color:#4d786e;
+}
+
+.rams-add-form {
+  max-width:760px;
+  margin-top:14px;
+}
+
+.method-sequence {
+  display:grid;
+  gap:10px;
+}
+
+.method-sequence article {
+  display:grid;
+  grid-template-columns:48px minmax(0,1fr);
+  gap:13px;
+  padding:14px;
+  border:1px solid #e7ebed;
+  border-radius:10px;
+  background:#fbfcfc;
+}
+
+.method-number {
+  display:grid;
+  place-items:center;
+  width:38px;
+  height:38px;
+  border-radius:9px;
+  background:var(--slate);
+  color:white;
+  font-size:10px;
+  font-weight:900;
+}
+
+.method-sequence strong {
+  color:var(--slate);
+  font-size:12px;
+}
+
+.method-sequence p {
+  margin:5px 0 0;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.55;
+}
+
+.hold-point {
+  display:inline-flex;
+  margin-top:8px;
+  padding:4px 7px;
+  border-radius:999px;
+  background:#eef6f5;
+  color:#527d77;
+  font-size:9px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+
+.approval-box {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  padding:16px;
+  border:1px solid #dce6e5;
+  border-radius:11px;
+  background:#f8fbfb;
+}
+
+.approval-box p {
+  max-width:760px;
+  margin:0;
+  color:#5f7179;
+  font-size:11px;
+  line-height:1.55;
+}
+
+@media (max-width: 720px) {
+  .approval-box {
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .approval-box .primary-button {
+    width:100%;
+  }
+
+  .method-sequence article {
+    grid-template-columns:40px minmax(0,1fr);
+    padding:12px;
+  }
+
+  .method-number {
+    width:34px;
+    height:34px;
+  }
+}
