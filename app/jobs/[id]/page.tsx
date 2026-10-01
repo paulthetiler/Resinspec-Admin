@@ -76,9 +76,14 @@ export default async function JobPage({ params }: JobPageProps) {
         </div>
         <div className="heading-actions">
           {can(role, "jobs:edit") ? (
-            <Link className="secondary-button" href={`/jobs/${id}/crew`}>
-              Manage crew
-            </Link>
+            <>
+              <Link className="secondary-button" href={`/jobs/${id}/edit`}>
+                Edit project
+              </Link>
+              <Link className="secondary-button" href={`/jobs/${id}/crew`}>
+                Manage crew
+              </Link>
+            </>
           ) : null}
           <Link className="secondary-button" href="/jobs">
             Back to jobs
