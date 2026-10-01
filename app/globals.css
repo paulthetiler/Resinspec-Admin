@@ -1159,3 +1159,43 @@ button:disabled { opacity:.48; cursor:not-allowed; }
   color:var(--muted);
   font-size:10px;
 }
+
+
+.site-brief-grid {
+  margin-bottom:16px;
+}
+
+.site-brief-panel .panel-head {
+  gap:10px;
+}
+
+.site-utilities {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:18px;
+}
+
+.site-utilities span {
+  display:grid;
+  gap:3px;
+  padding:10px;
+  border-radius:9px;
+  background:#f7f9fa;
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.4;
+}
+
+.site-utilities strong {
+  color:var(--slate);
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+
+@media (max-width: 520px) {
+  .site-utilities {
+    grid-template-columns:1fr;
+  }
+}
