@@ -9,6 +9,7 @@ import {
   isQaReleased,
   sortQaRecords,
 } from "@/lib/qa-gates";
+import { getPrestartState } from "@/lib/prestart";
 
 function optionalText(value: FormDataEntryValue | null) {
   const text = String(value ?? "").trim();
@@ -227,6 +228,18 @@ export async function completeQaRecord(formData: FormData) {
   }
 
   await assertPreviousGatesReleased(supabase, projectId, record.hold_point);
+
+  if (gate?.code === "substrate") {
+    const prestart = await getPrestartState(supabase, projectId);
+
+    if (!prestart?.releaseCurrent) {
+      qaError(
+        projectId,
+        "Gate 1 is locked until the current job inputs have a valid Pre-start release"
+      );
+    }
+  }
+
   await assertGateEvidence(supabase, projectId, record.hold_point, recordId);
 
   const { data: claimsData } = await supabase.auth.getClaims();
