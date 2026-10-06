@@ -77,6 +77,34 @@ A technical-system row is a revision. Jobs store the exact `system_id`, preservi
 - `snags`
 - `handover_records`
 
+### QA Gate System
+
+The QA layer is a sequential failure-prevention workflow, not a loose checklist.
+
+Standard gates:
+
+1. Substrate accepted
+2. Preparation complete
+3. Repairs and movement joints addressed
+4. Pre-application conditions accepted
+5. Primer / first application accepted
+6. Batch and coverage control complete
+7. Final finish inspection
+8. Snags closed and handover ready
+
+A later gate remains locked until every earlier gate is accepted or explicitly marked not applicable by an authorised reviewer.
+
+Additional controls:
+
+- evidence notes are required at judgement-based gates
+- Gate 4 requires an approved technical-system revision plus moisture, ambient temperature, slab temperature and relative-humidity readings
+- Gate 6 requires batch / mix evidence
+- Gate 8 requires all snags to be accepted
+- only Owner or Supervisor can accept / reject QA gates
+- handover cannot move beyond draft until the complete QA sequence is released
+- completion and review actor / timestamps remain attached to the QA record
+- QA changes continue into the project audit trail
+
 ### Audit
 
 - `audit_events`
