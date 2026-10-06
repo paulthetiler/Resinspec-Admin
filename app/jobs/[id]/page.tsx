@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { can } from "@/lib/permissions";
 import { requireAnyPermission } from "@/lib/access";
+import { SiteWorkflow } from "@/components/site-workflow";
+import { getSiteWorkflowState } from "@/lib/site-workflow";
 
 type JobPageProps = {
   params: Promise<{ id: string }>;
@@ -23,6 +25,12 @@ export default async function JobPage({ params }: JobPageProps) {
     .single();
 
   if (!project) {
+    notFound();
+  }
+
+  const workflow = await getSiteWorkflowState(supabase, id, role);
+
+  if (!workflow) {
     notFound();
   }
 
@@ -93,96 +101,14 @@ export default async function JobPage({ params }: JobPageProps) {
             {site?.town_city ? ` · ${site.town_city}` : ""}
           </p>
         </div>
-        <div className="heading-actions">
-          {can(role, "jobs:edit") ? (
-            <>
-              <Link className="secondary-button" href={`/jobs/${id}/edit`}>
-                Edit
-              </Link>
-              <Link className="secondary-button" href={`/jobs/${id}/crew`}>
-                Crew
-              </Link>
-            </>
-          ) : null}
-
-          {can(role, "survey:view") ? (
-            <>
-              <Link className="secondary-button" href={`/jobs/${id}/survey`}>
-                Survey
-              </Link>
-              <Link className="secondary-button" href={`/jobs/${id}/prestart`}>
-                Pre-start
-              </Link>
-            </>
-          ) : null}
-
-          {can(role, "documents:view") ? (
-            <>
-              <Link className="secondary-button" href={`/jobs/${id}/rams`}>
-                RAMS
-              </Link>
-              <Link className="secondary-button" href={`/jobs/${id}/documents`}>
-                Files
-              </Link>
-            </>
-          ) : null}
-
-          {can(role, "qa:view") ? (
-            <>
-              <Link className="secondary-button" href={`/jobs/${id}/qa`}>
-                QA
-              </Link>
-              <Link className="secondary-button" href={`/jobs/${id}/handover`}>
-                Handover
-              </Link>
-              <Link
-                className="secondary-button"
-                href={`/jobs/${id}/handover/report`}
-              >
-                QA Report
-              </Link>
-            </>
-          ) : null}
-
-          {can(role, "dashboard:view") ? (
-            <>
-              <Link className="secondary-button" href={`/jobs/${id}/actions`}>
-                Actions
-              </Link>
-              <Link className="secondary-button" href={`/jobs/${id}/timeline`}>
-                History
-              </Link>
-            </>
-          ) : null}
-
-          {can(role, "quote:view") ? (
-            <Link className="secondary-button" href={`/jobs/${id}/quote`}>
-              Quote
-            </Link>
-          ) : null}
-
-          {can(role, "commercial:view") ? (
-            <>
-              <Link className="secondary-button" href={`/jobs/${id}/estimate`}>
-                Estimate
-              </Link>
-              <Link className="secondary-button" href={`/jobs/${id}/commercial`}>
-                Commercial
-              </Link>
-              <Link className="secondary-button" href={`/jobs/${id}/variations`}>
-                Variations
-              </Link>
-              <Link className="secondary-button" href={`/jobs/${id}/invoices`}>
-                Invoices
-              </Link>
-            </>
-          ) : null}
-
+        <div className="heading-actions job-heading-actions">
           <Link className="secondary-button" href="/jobs">
             Jobs
           </Link>
         </div>
       </section>
+
+      <SiteWorkflow workflow={workflow} />
 
       <section className="detail-grid">
         <article className="detail-card">
@@ -202,6 +128,130 @@ export default async function JobPage({ params }: JobPageProps) {
           <strong>{documentCount ?? 0} / {qaCount ?? 0}</strong>
         </article>
       </section>
+
+      <details className="job-tools">
+        <summary>
+          <span>
+            <strong>More job tools</strong>
+            <small>Admin, files, reports and supporting job records</small>
+          </span>
+          <b>Open tools</b>
+        </summary>
+
+        <div className="job-tools-grid">
+          {directionsUrl ? (
+            <a
+              className="job-tool-link"
+              href={directionsUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span>Site</span>
+              <strong>Directions</strong>
+            </a>
+          ) : null}
+
+          {can(role, "jobs:edit") ? (
+            <>
+              <Link className="job-tool-link" href={`/jobs/${id}/edit`}>
+                <span>Job</span>
+                <strong>Edit job</strong>
+              </Link>
+              <Link className="job-tool-link" href={`/jobs/${id}/crew`}>
+                <span>People</span>
+                <strong>Crew</strong>
+              </Link>
+            </>
+          ) : null}
+
+          {can(role, "survey:view") ? (
+            <>
+              <Link className="job-tool-link" href={`/jobs/${id}/survey`}>
+                <span>Technical</span>
+                <strong>Survey</strong>
+              </Link>
+              <Link className="job-tool-link" href={`/jobs/${id}/prestart`}>
+                <span>Control</span>
+                <strong>Pre-start</strong>
+              </Link>
+            </>
+          ) : null}
+
+          {can(role, "documents:view") ? (
+            <>
+              <Link className="job-tool-link" href={`/jobs/${id}/rams`}>
+                <span>Safety</span>
+                <strong>RAMS</strong>
+              </Link>
+              <Link className="job-tool-link" href={`/jobs/${id}/documents`}>
+                <span>Records</span>
+                <strong>Files</strong>
+              </Link>
+            </>
+          ) : null}
+
+          {can(role, "qa:view") ? (
+            <>
+              <Link className="job-tool-link" href={`/jobs/${id}/qa`}>
+                <span>Installation</span>
+                <strong>QA</strong>
+              </Link>
+              <Link className="job-tool-link" href={`/jobs/${id}/handover`}>
+                <span>Close-out</span>
+                <strong>Handover</strong>
+              </Link>
+              <Link
+                className="job-tool-link"
+                href={`/jobs/${id}/handover/report`}
+              >
+                <span>Client record</span>
+                <strong>QA report</strong>
+              </Link>
+            </>
+          ) : null}
+
+          {can(role, "dashboard:view") ? (
+            <>
+              <Link className="job-tool-link" href={`/jobs/${id}/actions`}>
+                <span>Workflow</span>
+                <strong>Actions</strong>
+              </Link>
+              <Link className="job-tool-link" href={`/jobs/${id}/timeline`}>
+                <span>Audit</span>
+                <strong>History</strong>
+              </Link>
+            </>
+          ) : null}
+
+          {can(role, "quote:view") ? (
+            <Link className="job-tool-link" href={`/jobs/${id}/quote`}>
+              <span>Client</span>
+              <strong>Quote</strong>
+            </Link>
+          ) : null}
+
+          {can(role, "commercial:view") ? (
+            <>
+              <Link className="job-tool-link" href={`/jobs/${id}/estimate`}>
+                <span>Commercial</span>
+                <strong>Estimate</strong>
+              </Link>
+              <Link className="job-tool-link" href={`/jobs/${id}/commercial`}>
+                <span>Commercial</span>
+                <strong>Job financials</strong>
+              </Link>
+              <Link className="job-tool-link" href={`/jobs/${id}/variations`}>
+                <span>Commercial</span>
+                <strong>Variations</strong>
+              </Link>
+              <Link className="job-tool-link" href={`/jobs/${id}/invoices`}>
+                <span>Commercial</span>
+                <strong>Invoices</strong>
+              </Link>
+            </>
+          ) : null}
+        </div>
+      </details>
 
       <div className="two-column site-brief-grid">
         <section className="panel site-brief-panel">
@@ -315,7 +365,7 @@ export default async function JobPage({ params }: JobPageProps) {
               </dd>
             </div>
             <div>
-              <dt>Next action</dt>
+              <dt>Office next action</dt>
               <dd>
                 {project.next_action || "None"}
                 {project.next_action_due ? ` · ${project.next_action_due}` : ""}

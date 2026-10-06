@@ -27,6 +27,7 @@ Implemented:
 - Private project document storage
 - Document revision / approval / supersede workflow
 - Structured RAMS with approval and crew acknowledgement
+- Touch-first Site Workflow with derived next actions for tablet/site use
 - Technical survey completion / release control with survey-linked photo evidence
 - Pre-start readiness gate with controlled release snapshot before installation
 - Sequential ResinSpec QA Gate System with supervisor release between critical stages

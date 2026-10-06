@@ -77,7 +77,7 @@ export default async function DocumentsOverviewPage() {
           <p className="eyebrow">Controlled project evidence</p>
           <h1>Documents & QA</h1>
           <p>
-            One view of RAMS status, project files and unresolved QA across the jobs you can access.
+            Select the job, then follow the Site Workflow. The job screen tells the site team exactly what needs doing next.
           </p>
         </div>
       </section>
@@ -107,7 +107,51 @@ export default async function DocumentsOverviewPage() {
         </article>
       </section>
 
-      <section className="table-card">
+      <section className="evidence-workflow-list">
+        {projects && projects.length > 0 ? (
+          projects.map((project) => {
+            const rams = latestRams.get(project.id);
+            const qaOpen = qaOpenByProject.get(project.id) || 0;
+            const docCount = docsByProject.get(project.id) || 0;
+
+            return (
+              <article className="evidence-workflow-card" key={project.id}>
+                <div className="evidence-workflow-card-head">
+                  <div>
+                    <span>{project.reference}</span>
+                    <strong>{project.title}</strong>
+                  </div>
+                  <span className="status-badge">{project.status}</span>
+                </div>
+
+                <div className="evidence-workflow-stats">
+                  <span>
+                    <small>RAMS</small>
+                    <strong>{rams ? `${rams.status} · Rev ${rams.version}` : "Missing"}</strong>
+                  </span>
+                  <span>
+                    <small>Files</small>
+                    <strong>{docCount}</strong>
+                  </span>
+                  <span>
+                    <small>QA action</small>
+                    <strong>{qaOpen > 0 ? qaOpen : "Clear"}</strong>
+                  </span>
+                </div>
+
+                <Link
+                  className="primary-button evidence-workflow-open"
+                  href={`/jobs/${project.id}`}
+                >
+                  Open job workflow →
+                </Link>
+              </article>
+            );
+          })
+        ) : null}
+      </section>
+
+      <section className="table-card evidence-desktop-table">
         <div className="table-scroll">
           <table className="data-table">
             <thead>
@@ -173,26 +217,12 @@ export default async function DocumentsOverviewPage() {
                         )}
                       </td>
                       <td>
-                        <div className="row-actions">
-                          <Link
-                            className="text-button"
-                            href={`/jobs/${project.id}/rams`}
-                          >
-                            RAMS
-                          </Link>
-                          <Link
-                            className="text-button"
-                            href={`/jobs/${project.id}/documents`}
-                          >
-                            Files
-                          </Link>
-                          <Link
-                            className="text-button"
-                            href={`/jobs/${project.id}/qa`}
-                          >
-                            QA
-                          </Link>
-                        </div>
+                        <Link
+                          className="primary-button workflow-open-button"
+                          href={`/jobs/${project.id}`}
+                        >
+                          Open workflow
+                        </Link>
                       </td>
                     </tr>
                   );
