@@ -21,6 +21,27 @@ function refresh(projectId: string) {
   revalidatePath(`/jobs/${projectId}/qa`);
 }
 
+async function assertPrestartStillEditable(
+  supabase: Awaited<ReturnType<typeof requireAnyPermission>>["supabase"],
+  projectId: string
+) {
+  const { data, error } = await supabase
+    .from("qa_records")
+    .select("status")
+    .eq("project_id", projectId)
+    .eq("hold_point", "Substrate accepted")
+    .maybeSingle();
+
+  if (error) prestartError(projectId, error.message);
+
+  if (data && data.status !== "open") {
+    prestartError(
+      projectId,
+      "Pre-start is locked once QA Gate 1 has begun. Record later changes through the live-job QA / variation process."
+    );
+  }
+}
+
 export async function releasePrestart(formData: FormData) {
   const { supabase, role } = await requireAnyPermission(["qa:complete"]);
   const projectId = String(formData.get("project_id") ?? "");
@@ -30,6 +51,8 @@ export async function releasePrestart(formData: FormData) {
   if (role !== "owner" && role !== "supervisor") {
     prestartError(projectId, "Owner or supervisor pre-start release is required");
   }
+
+  await assertPrestartStillEditable(supabase, projectId);
 
   const state = await getPrestartState(supabase, projectId);
   if (!state) prestartError(projectId, "Project not found");
@@ -108,6 +131,8 @@ export async function reopenPrestart(formData: FormData) {
   if (role !== "owner" && role !== "supervisor") {
     prestartError(projectId, "Owner or supervisor access required");
   }
+
+  await assertPrestartStillEditable(supabase, projectId);
 
   const { error } = await supabase
     .from("prestart_releases")
