@@ -72,6 +72,7 @@ A technical-system row is a revision. Jobs store the exact `system_id`, preservi
 - `documents`
 - `document_acknowledgements`
 - `qa_records`
+- QA photo evidence linked through `documents.qa_record_id`
 - `site_readings`
 - `batch_logs`
 - `snags`
@@ -97,6 +98,8 @@ A later gate remains locked until every earlier gate is accepted or explicitly m
 Additional controls:
 
 - evidence notes are required at judgement-based gates
+- photos are stored in the existing private project bucket but linked to the individual QA gate, so they do not float in the general document list
+- visual QA gates require at least one photo: substrate, preparation, primer / first application (unless N/A) and final finish
 - Gate 4 requires an approved technical-system revision plus moisture, ambient temperature, slab temperature and relative-humidity readings
 - Gate 6 requires batch / mix evidence
 - Gate 8 requires all snags to be accepted
