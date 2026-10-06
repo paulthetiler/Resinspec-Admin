@@ -28,7 +28,8 @@ export default async function DocumentsOverviewPage() {
       .order("version", { ascending: false }),
     supabase
       .from("documents")
-      .select("project_id, status, document_type, acknowledgement_required"),
+      .select("project_id, status, document_type, acknowledgement_required")
+      .is("qa_record_id", null),
     supabase
       .from("qa_records")
       .select("project_id, status, hold_point"),
