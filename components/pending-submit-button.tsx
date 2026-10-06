@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormStatus } from "react";
+import { useFormStatus } from "react-dom";
 
 type PendingSubmitButtonProps = {
   idleLabel: string;
