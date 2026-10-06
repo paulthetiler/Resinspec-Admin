@@ -1,8 +1,15 @@
 import Link from "next/link";
 import { can } from "@/lib/permissions";
 import { requireAnyPermission } from "@/lib/access";
+import { ProjectSearch } from "@/components/project-search";
 
-export default async function JobsPage() {
+type JobsPageProps = {
+  searchParams: Promise<{ q?: string }>;
+};
+
+export default async function JobsPage({ searchParams }: JobsPageProps) {
+  const { q = "" } = await searchParams;
+  const query = q.trim().toLowerCase();
   const { supabase, role } = await requireAnyPermission([
     "jobs:view_all",
     "jobs:view_assigned",
@@ -14,6 +21,22 @@ export default async function JobsPage() {
       "id, reference, title, status, area_m2, programme_start, programme_end, next_action, next_action_due, clients(trading_name, legal_name), sites(name, town_city)"
     )
     .order("created_at", { ascending: false });
+
+  const visibleProjects = (projects || []).filter((project) => {
+    if (!query) return true;
+    const client = Array.isArray(project.clients) ? project.clients[0] : project.clients;
+    const site = Array.isArray(project.sites) ? project.sites[0] : project.sites;
+    const haystack = [
+      project.reference,
+      project.title,
+      project.status,
+      client?.trading_name,
+      client?.legal_name,
+      site?.name,
+      site?.town_city,
+    ].filter(Boolean).join(" ").toLowerCase();
+    return haystack.includes(query);
+  });
 
   return (
     <div className="standalone-page">
@@ -33,6 +56,13 @@ export default async function JobsPage() {
         ) : null}
       </section>
 
+      <ProjectSearch
+        action="/jobs"
+        query={q}
+        resultCount={visibleProjects.length}
+        placeholder="Search ref, job, client, site or status"
+      />
+
       {error ? (
         <section className="panel">
           <strong>Could not load projects.</strong>
@@ -51,8 +81,61 @@ export default async function JobsPage() {
         </section>
       ) : null}
 
-      {projects && projects.length > 0 ? (
-        <section className="table-card">
+      {visibleProjects.length > 0 ? (
+        <>
+          <section className="evidence-workflow-list jobs-workflow-list">
+            {visibleProjects.map((project) => {
+              const client = Array.isArray(project.clients)
+                ? project.clients[0]
+                : project.clients;
+              const site = Array.isArray(project.sites)
+                ? project.sites[0]
+                : project.sites;
+
+              return (
+                <article className="evidence-workflow-card" key={project.id}>
+                  <div className="evidence-workflow-card-head">
+                    <div>
+                      <span>{project.reference}</span>
+                      <strong>{project.title}</strong>
+                      <small>
+                        {client?.trading_name ||
+                          client?.legal_name ||
+                          site?.name ||
+                          "Client not added"}
+                        {site?.town_city ? ` · ${site.town_city}` : ""}
+                      </small>
+                    </div>
+                    <span className="status-badge">{project.status}</span>
+                  </div>
+
+                  <div className="evidence-workflow-stats jobs-workflow-stats">
+                    <span>
+                      <small>Area</small>
+                      <strong>{project.area_m2 ? `${project.area_m2} m²` : "TBC"}</strong>
+                    </span>
+                    <span>
+                      <small>Programme</small>
+                      <strong>
+                        {project.programme_start || project.programme_end
+                          ? `${project.programme_start ?? "TBC"} → ${project.programme_end ?? "TBC"}`
+                          : "TBC"}
+                      </strong>
+                    </span>
+                  </div>
+
+                  <Link
+                    className="primary-button evidence-workflow-open"
+                    href={`/jobs/${project.id}`}
+                  >
+                    Open job workflow →
+                  </Link>
+                </article>
+              );
+            })}
+          </section>
+
+          <section className="table-card evidence-desktop-table">
           <div className="table-scroll">
             <table className="data-table">
               <thead>
@@ -66,7 +149,7 @@ export default async function JobsPage() {
                 </tr>
               </thead>
               <tbody>
-                {projects.map((project) => {
+                {visibleProjects.map((project) => {
                   const client = Array.isArray(project.clients)
                     ? project.clients[0]
                     : project.clients;
@@ -111,6 +194,14 @@ export default async function JobsPage() {
                 })}
               </tbody>
             </table>
+          </div>
+          </section>
+        </>
+      ) : query && projects && projects.length > 0 ? (
+        <section className="panel">
+          <div className="empty-state compact-empty">
+            <strong>No matching jobs.</strong>
+            <p>Try a reference, client, site or part of the job title.</p>
           </div>
         </section>
       ) : null}

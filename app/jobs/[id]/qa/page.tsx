@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAnyPermission } from "@/lib/access";
 import { QaEvidenceUpload } from "@/components/qa-evidence-upload";
+import { QuickNoteInput } from "@/components/quick-note-input";
 import { getPrestartState } from "@/lib/prestart";
 import {
   QA_GATES,
@@ -20,6 +21,47 @@ import {
 type QaPageProps = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
+};
+
+const GATE_QUICK_NOTES: Record<string, string[]> = {
+  substrate: [
+    "Checked — substrate accepted",
+    "No visible contamination or defects beyond recorded items",
+    "Condition matches survey record",
+  ],
+  preparation: [
+    "Preparation complete — surface clean and ready",
+    "Edges detailed and surface vacuumed",
+    "Prepared profile accepted",
+  ],
+  repairs: [
+    "Repairs complete and accepted",
+    "Cracks / joints treated as specified",
+    "Drain / edge detailing complete",
+  ],
+  pre_application: [
+    "Readings checked — conditions accepted",
+    "Approved system confirmed",
+  ],
+  primer: [
+    "First application accepted — no visible defects",
+    "Coverage and appearance accepted",
+    "No pinholes / bond concerns observed",
+  ],
+  batch_control: [
+    "Batch and mix records checked",
+    "Coverage record complete",
+  ],
+  final_finish: [
+    "Final finish inspected and accepted",
+    "Edges, joints and drains checked",
+    "No visible defects beyond recorded snags",
+  ],
+  handover_ready: [
+    "All snags closed and accepted",
+    "Cure / access restrictions recorded",
+    "Ready for handover",
+  ],
 };
 
 function localDateTime(value: string | null) {
@@ -268,6 +310,7 @@ export default async function QaPage({
 
                 return (
                   <article
+                    id={gate ? `gate-${gate.order}` : undefined}
                     className={`qa-row ${locked ? "qa-row-locked" : ""}`}
                     key={record.id}
                   >
@@ -385,12 +428,17 @@ export default async function QaPage({
                               name="record_id"
                               value={record.id}
                             />
-                            <input
+                            <QuickNoteInput
                               name="notes"
                               required={Boolean(gate?.noteRequired)}
+                              options={
+                                gate
+                                  ? GATE_QUICK_NOTES[gate.code] || []
+                                  : []
+                              }
                               placeholder={
                                 gate?.noteRequired
-                                  ? "Evidence / what was checked"
+                                  ? "Tap a common note or type what was checked"
                                   : "Optional supporting note"
                               }
                             />

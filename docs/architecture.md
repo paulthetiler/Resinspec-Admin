@@ -284,6 +284,16 @@ Commercial dashboard surfaces overdue and due-soon debtor records.
 
 ## Site workflow UX
 
+### Friction controls
+
+- Jobs, Pipeline and Documents & QA have project search.
+- Jobs and Documents & QA switch to large workflow cards on tablet.
+- Survey risk fields use tap-first common answers while keeping the stored text editable for unusual conditions.
+- QA evidence notes offer optional quick phrases; nothing is pre-selected, so the installer still has to affirm what was actually checked.
+- Site Workflow deep-links directly to the current QA gate.
+- Touch targets on QA, pre-start and row actions are enlarged at tablet widths.
+
+
 The job page is the operational entry point for site staff.
 
 The workflow is derived from controlled project state rather than relying on a manually typed next-action field. It presents:

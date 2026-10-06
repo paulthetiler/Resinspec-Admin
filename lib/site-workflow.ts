@@ -221,7 +221,9 @@ export async function getSiteWorkflowState(
           : currentGate
             ? currentGate.label
             : "Set up the standard QA gates.",
-      href: route(projectId, "/qa"),
+      href: currentGate
+        ? route(projectId, `/qa#gate-${currentGate.order}`)
+        : route(projectId, "/qa"),
       tone: allQaReleased
         ? "complete"
         : prestart.releaseCurrent
@@ -394,7 +396,7 @@ export async function getSiteWorkflowState(
         title: currentGate.label,
         detail: "Set up the standard QA gates, then complete this hold point.",
         buttonLabel: "Open QA",
-        href: route(projectId, "/qa"),
+        href: route(projectId, `/qa#gate-${currentGate.order}`),
         blocked: false,
       };
     } else if (currentQaRecord.status === "complete") {
@@ -408,7 +410,7 @@ export async function getSiteWorkflowState(
           ? "Evidence has been completed. Review it and release the next gate."
           : "The gate is complete and waiting for Owner / Supervisor approval.",
         buttonLabel: canRelease ? "Review gate" : "View QA",
-        href: route(projectId, "/qa"),
+        href: route(projectId, `/qa#gate-${currentGate.order}`),
         blocked: !canRelease,
       };
     } else {
