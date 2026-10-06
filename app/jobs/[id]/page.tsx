@@ -31,7 +31,9 @@ export default async function JobPage({ params }: JobPageProps) {
       supabase
         .from("documents")
         .select("id", { count: "exact", head: true })
-        .eq("project_id", id),
+        .eq("project_id", id)
+        .is("qa_record_id", null)
+        .is("survey_id", null),
       supabase
         .from("qa_records")
         .select("id", { count: "exact", head: true })
@@ -104,9 +106,14 @@ export default async function JobPage({ params }: JobPageProps) {
           ) : null}
 
           {can(role, "survey:view") ? (
-            <Link className="secondary-button" href={`/jobs/${id}/survey`}>
-              Survey
-            </Link>
+            <>
+              <Link className="secondary-button" href={`/jobs/${id}/survey`}>
+                Survey
+              </Link>
+              <Link className="secondary-button" href={`/jobs/${id}/prestart`}>
+                Pre-start
+              </Link>
+            </>
           ) : null}
 
           {can(role, "documents:view") ? (

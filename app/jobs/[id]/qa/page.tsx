@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAnyPermission } from "@/lib/access";
 import { QaEvidenceUpload } from "@/components/qa-evidence-upload";
+import { getPrestartState } from "@/lib/prestart";
 import {
   QA_GATES,
   getQaGateByLabel,
@@ -85,6 +86,8 @@ export default async function QaPage({
   ]);
 
   if (!project) notFound();
+
+  const prestart = await getPrestartState(supabase, id);
 
   const system = Array.isArray(project.technical_systems)
     ? project.technical_systems[0]
@@ -177,6 +180,27 @@ export default async function QaPage({
       </section>
 
       {error ? <p className="form-error page-error">{error}</p> : null}
+
+      {prestart?.releaseCurrent ? (
+        <div className="foundation-note qa-prestart-note">
+          <span className="pulse" />
+          <div>
+            <strong>Pre-start released</strong>
+            <p>Gate 1 is permitted to proceed when site works begin.</p>
+          </div>
+          <Link className="text-button" href={`/jobs/${id}/prestart`}>
+            View pre-start
+          </Link>
+        </div>
+      ) : (
+        <div className="prestart-stale-note qa-prestart-note">
+          <strong>Gate 1 is locked.</strong>{" "}
+          Current project inputs do not have a valid pre-start release.
+          <Link className="text-button" href={`/jobs/${id}/prestart`}>
+            Open pre-start
+          </Link>
+        </div>
+      )}
 
       <section className="panel qa-panel">
         <div className="panel-head qa-panel-head">

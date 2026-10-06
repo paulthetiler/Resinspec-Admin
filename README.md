@@ -27,6 +27,8 @@ Implemented:
 - Private project document storage
 - Document revision / approval / supersede workflow
 - Structured RAMS with approval and crew acknowledgement
+- Technical survey completion / release control with survey-linked photo evidence
+- Pre-start readiness gate with controlled release snapshot before installation
 - Sequential ResinSpec QA Gate System with supervisor release between critical stages
 - Gate-linked private photo evidence, with mandatory photos at visual hold points
 - Moisture / environmental readings enforced before pre-application release

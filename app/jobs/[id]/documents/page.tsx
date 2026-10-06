@@ -43,6 +43,7 @@ export default async function ProjectDocumentsPage({
       )
       .eq("project_id", id)
       .is("qa_record_id", null)
+      .is("survey_id", null)
       .order("created_at", { ascending: false }),
     userId
       ? supabase
