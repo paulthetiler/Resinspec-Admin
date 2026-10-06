@@ -15,6 +15,7 @@ export type QaGateDefinition = {
   purpose: string;
   evidence: string;
   noteRequired?: boolean;
+  photoRequired?: boolean;
   allowNotApplicable?: boolean;
 };
 
@@ -27,6 +28,7 @@ export const QA_GATES: QaGateDefinition[] = [
     evidence:
       "Record substrate type, visible condition, contamination, cracks / joints and any concerns that need action.",
     noteRequired: true,
+    photoRequired: true,
   },
   {
     code: "preparation",
@@ -36,6 +38,7 @@ export const QA_GATES: QaGateDefinition[] = [
     evidence:
       "Confirm the specified mechanical preparation is complete, edges are detailed and the surface has been vacuumed clean.",
     noteRequired: true,
+    photoRequired: true,
   },
   {
     code: "repairs",
@@ -63,6 +66,7 @@ export const QA_GATES: QaGateDefinition[] = [
     evidence:
       "Record coverage, appearance, pinholes / defects, bond concerns and any corrective work before the next layer.",
     noteRequired: true,
+    photoRequired: true,
     allowNotApplicable: true,
   },
   {
@@ -81,6 +85,7 @@ export const QA_GATES: QaGateDefinition[] = [
     evidence:
       "Record finish uniformity, texture / slip finish, pinholes, bubbles, edges, drains, joints, damage and any snags raised.",
     noteRequired: true,
+    photoRequired: true,
   },
   {
     code: "handover_ready",
