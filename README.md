@@ -17,7 +17,7 @@ Implemented:
 - Pipeline
 - Clients and sites
 - Resin technical survey
-- Versioned estimator
+- Versioned estimator with idempotent line submission and immediate save feedback
 - Client quote workflow and printable quote view
 - Live Jobs register
 - Project editing
