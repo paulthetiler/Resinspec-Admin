@@ -128,6 +128,12 @@ export default async function JobPage({ params }: JobPageProps) {
               <Link className="secondary-button" href={`/jobs/${id}/handover`}>
                 Handover
               </Link>
+              <Link
+                className="secondary-button"
+                href={`/jobs/${id}/handover/report`}
+              >
+                QA Report
+              </Link>
             </>
           ) : null}
 
