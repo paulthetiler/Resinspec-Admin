@@ -3433,3 +3433,180 @@ button:disabled { opacity:.48; cursor:not-allowed; }
     min-height:44px;
   }
 }
+
+
+/* Site UX friction pass */
+.project-search {
+  display:flex;
+  align-items:flex-end;
+  gap:8px;
+  margin:0 0 16px;
+  padding:12px;
+  border:1px solid var(--light);
+  border-radius:12px;
+  background:white;
+}
+
+.project-search label {
+  flex:1;
+  min-width:180px;
+}
+
+.project-search label > span {
+  display:block;
+  margin-bottom:6px;
+  color:#718087;
+  font-size:8px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.07em;
+}
+
+.project-search input {
+  width:100%;
+  min-height:42px;
+  border:1px solid #d8e0e2;
+  border-radius:9px;
+  padding:9px 11px;
+  background:#fbfcfc;
+  color:var(--slate);
+  font:inherit;
+  font-size:11px;
+}
+
+.project-search > .primary-button,
+.project-search > .secondary-button {
+  min-height:42px;
+}
+
+.project-search > small {
+  align-self:center;
+  margin-left:auto;
+  color:var(--muted);
+  font-size:9px;
+  white-space:nowrap;
+}
+
+.quick-entry-field > span {
+  margin-bottom:7px;
+}
+
+.quick-entry-options {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin:0 0 8px;
+}
+
+.quick-entry-chip,
+.quick-note-chip {
+  min-height:36px;
+  border:1px solid #d8e1e2;
+  border-radius:999px;
+  padding:7px 10px;
+  background:#f8fafb;
+  color:#5d6d74;
+  font-size:9px;
+  font-weight:800;
+  line-height:1.15;
+  cursor:pointer;
+}
+
+.quick-entry-chip:hover,
+.quick-note-chip:hover {
+  border-color:#b8cfcb;
+  background:#f2f8f7;
+}
+
+.quick-entry-chip.is-selected,
+.quick-note-chip.is-selected {
+  border-color:#83b8b0;
+  background:#eaf5f3;
+  color:#3f6e67;
+  box-shadow:inset 0 0 0 1px rgba(127,184,176,.18);
+}
+
+.quick-entry-field textarea {
+  min-height:70px;
+}
+
+.quick-note-input {
+  flex:1;
+  min-width:min(100%, 280px);
+}
+
+.quick-note-options {
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  margin-bottom:6px;
+}
+
+.quick-note-chip {
+  min-height:32px;
+  padding:6px 9px;
+  font-size:8px;
+}
+
+.quick-note-input > input {
+  width:100%;
+}
+
+.qa-row[id] {
+  scroll-margin-top:22px;
+}
+
+.qa-row:target {
+  border-color:#7fb8b0;
+  box-shadow:0 0 0 3px rgba(127,184,176,.15);
+  background:#fbfefd;
+}
+
+@media (max-width: 900px) {
+  .project-search {
+    position:sticky;
+    top:8px;
+    z-index:20;
+    box-shadow:0 5px 18px rgba(15,42,58,.06);
+  }
+
+  .quick-entry-chip {
+    min-height:42px;
+    padding:9px 12px;
+    font-size:10px;
+  }
+
+  .quick-note-chip {
+    min-height:40px;
+    padding:8px 11px;
+    font-size:9px;
+  }
+
+  .quick-entry-field textarea,
+  .quick-note-input > input {
+    font-size:16px;
+  }
+}
+
+@media (max-width: 620px) {
+  .project-search {
+    display:grid;
+    grid-template-columns:1fr auto;
+    align-items:end;
+  }
+
+  .project-search label {
+    grid-column:1 / -1;
+  }
+
+  .project-search > small {
+    grid-column:1 / -1;
+    justify-self:start;
+    margin-left:0;
+  }
+
+  .quick-entry-options,
+  .quick-note-options {
+    gap:7px;
+  }
+}
