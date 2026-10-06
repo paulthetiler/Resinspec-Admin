@@ -3724,3 +3724,48 @@ button:disabled {
     animation:none;
   }
 }
+
+
+.estimate-duplicate-warning {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  margin:0 0 12px;
+  padding:12px 13px;
+  border:1px solid #ead8ad;
+  border-radius:10px;
+  background:#fff8e8;
+}
+
+.estimate-duplicate-warning > div {
+  min-width:0;
+}
+
+.estimate-duplicate-warning strong {
+  color:#6f5418;
+  font-size:11px;
+}
+
+.estimate-duplicate-warning p {
+  margin:4px 0 0;
+  color:#806b3b;
+  font-size:9px;
+  line-height:1.45;
+}
+
+.estimate-duplicate-warning form {
+  flex:0 0 auto;
+}
+
+@media (max-width:720px) {
+  .estimate-duplicate-warning {
+    align-items:stretch;
+    flex-direction:column;
+  }
+
+  .estimate-duplicate-warning .secondary-button {
+    width:100%;
+    min-height:44px;
+  }
+}
