@@ -3153,9 +3153,87 @@ button:disabled { opacity:.48; cursor:not-allowed; }
 }
 
 .workflow-open-button {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
   min-width:128px;
   min-height:44px;
   padding:10px 14px;
+}
+
+.evidence-workflow-list {
+  display:none;
+}
+
+.evidence-workflow-card {
+  padding:15px;
+  border:1px solid #dfe6e8;
+  border-radius:13px;
+  background:white;
+}
+
+.evidence-workflow-card-head {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.evidence-workflow-card-head > div {
+  min-width:0;
+  display:grid;
+  gap:3px;
+}
+
+.evidence-workflow-card-head > div > span {
+  color:#56877f;
+  font-size:8px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+
+.evidence-workflow-card-head > div > strong {
+  color:var(--slate);
+  font-size:14px;
+}
+
+.evidence-workflow-stats {
+  display:grid;
+  grid-template-columns:1.4fr .7fr .8fr;
+  gap:7px;
+  margin:13px 0;
+}
+
+.evidence-workflow-stats > span {
+  display:grid;
+  gap:4px;
+  padding:9px;
+  border-radius:8px;
+  background:#f5f8f8;
+}
+
+.evidence-workflow-stats small {
+  color:#7b898f;
+  font-size:7px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+
+.evidence-workflow-stats strong {
+  color:var(--slate);
+  font-size:10px;
+}
+
+.evidence-workflow-open {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  width:100%;
+  min-height:50px;
+  padding:12px 14px;
+  font-size:11px;
 }
 
 @media (max-width: 1100px) {
@@ -3296,6 +3374,15 @@ button:disabled { opacity:.48; cursor:not-allowed; }
 
   .main-content {
     padding:28px 18px 104px;
+  }
+
+  .evidence-workflow-list {
+    display:grid;
+    gap:10px;
+  }
+
+  .evidence-desktop-table {
+    display:none;
   }
 
   .site-workflow-sticky {
