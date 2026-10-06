@@ -28,6 +28,7 @@ Implemented:
 - Document revision / approval / supersede workflow
 - Structured RAMS with approval and crew acknowledgement
 - Sequential ResinSpec QA Gate System with supervisor release between critical stages
+- Gate-linked private photo evidence, with mandatory photos at visual hold points
 - Moisture / environmental readings enforced before pre-application release
 - Batch / mix traceability enforced before batch-control release
 - People / workforce records
