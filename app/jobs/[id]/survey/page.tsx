@@ -2,11 +2,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { can } from "@/lib/permissions";
 import { requireAnyPermission } from "@/lib/access";
-import { saveSurvey } from "./actions";
+import { SurveyEvidenceUpload } from "@/components/survey-evidence-upload";
+import { completeSurvey, reviewSurvey, saveSurvey } from "./actions";
 
 type SurveyPageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; saved?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    saved?: string;
+    completed?: string;
+    released?: string;
+    blocked?: string;
+  }>;
 };
 
 export default async function SurveyPage({
@@ -14,10 +21,10 @@ export default async function SurveyPage({
   searchParams,
 }: SurveyPageProps) {
   const { id } = await params;
-  const { error, saved } = await searchParams;
+  const { error, saved, completed, released, blocked } = await searchParams;
   const { supabase, role } = await requireAnyPermission(["survey:view"]);
 
-  const [{ data: project }, { data: survey }] = await Promise.all([
+  const [{ data: project }, { data: survey }, { data: photos }] = await Promise.all([
     supabase
       .from("projects")
       .select("id, reference, title, area_m2, sites(name, town_city, postcode)")
@@ -28,12 +35,60 @@ export default async function SurveyPage({
       .select("*")
       .eq("project_id", id)
       .maybeSingle(),
+    supabase
+      .from("documents")
+      .select("id, survey_id, file_name, storage_path, created_at")
+      .eq("project_id", id)
+      .eq("document_type", "photo")
+      .in("status", ["complete", "approved"])
+      .not("survey_id", "is", null)
+      .order("created_at", { ascending: true }),
   ]);
 
   if (!project) notFound();
 
   const site = Array.isArray(project.sites) ? project.sites[0] : project.sites;
   const editable = can(role, "survey:edit");
+  const canReview = role === "owner" || role === "supervisor";
+
+  const signedPhotos = await Promise.all(
+    (photos || [])
+      .filter((photo) => !survey || photo.survey_id === survey.id)
+      .map(async (photo) => {
+        if (!photo.storage_path) return { ...photo, signedUrl: null };
+
+        const { data } = await supabase.storage
+          .from("project-documents")
+          .createSignedUrl(photo.storage_path, 60 * 60);
+
+        return { ...photo, signedUrl: data?.signedUrl ?? null };
+      })
+  );
+
+  const actorIds = Array.from(
+    new Set(
+      [
+        survey?.surveyed_by,
+        survey?.completed_by,
+        survey?.reviewed_by,
+        survey?.released_by,
+      ].filter((value): value is string => Boolean(value))
+    )
+  );
+
+  let actorNames = new Map<string, string>();
+  if (actorIds.length > 0) {
+    const { data: actors } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", actorIds);
+
+    actorNames = new Map(
+      (actors || []).map((actor) => [actor.id, actor.full_name || "Team member"])
+    );
+  }
+
+  const releaseStatus = survey?.release_status || "draft";
 
   if (!editable) {
     return (
