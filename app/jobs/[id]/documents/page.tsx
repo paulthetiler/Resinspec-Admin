@@ -42,6 +42,7 @@ export default async function ProjectDocumentsPage({
         "id, document_type, title, version, status, file_name, file_size_bytes, acknowledgement_required, approved_at, created_at"
       )
       .eq("project_id", id)
+      .is("qa_record_id", null)
       .order("created_at", { ascending: false }),
     userId
       ? supabase

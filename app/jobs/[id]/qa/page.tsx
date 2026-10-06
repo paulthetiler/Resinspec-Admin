@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAnyPermission } from "@/lib/access";
+import { QaEvidenceUpload } from "@/components/qa-evidence-upload";
 import {
   QA_GATES,
   getQaGateByLabel,
@@ -44,6 +45,7 @@ export default async function QaPage({
     { data: qa },
     { data: readings },
     { data: batches },
+    { data: qaEvidence },
   ] = await Promise.all([
     supabase
       .from("projects")
@@ -70,6 +72,16 @@ export default async function QaPage({
       .eq("project_id", id)
       .order("mixed_at", { ascending: false })
       .limit(20),
+    supabase
+      .from("documents")
+      .select(
+        "id, qa_record_id, file_name, storage_path, mime_type, created_at"
+      )
+      .eq("project_id", id)
+      .eq("document_type", "photo")
+      .in("status", ["complete", "approved"])
+      .not("qa_record_id", "is", null)
+      .order("created_at", { ascending: true }),
   ]);
 
   if (!project) notFound();
@@ -79,6 +91,30 @@ export default async function QaPage({
     : project.technical_systems;
   const canReview = role === "owner" || role === "supervisor";
   const sortedQa = sortQaRecords(qa || []);
+
+  const signedEvidence = await Promise.all(
+    (qaEvidence || []).map(async (item) => {
+      if (!item.storage_path) return { ...item, signedUrl: null };
+
+      const { data } = await supabase.storage
+        .from("project-documents")
+        .createSignedUrl(item.storage_path, 60 * 60);
+
+      return { ...item, signedUrl: data?.signedUrl ?? null };
+    })
+  );
+
+  const evidenceByGate = new Map<
+    string,
+    (typeof signedEvidence)[number][]
+  >();
+
+  for (const item of signedEvidence) {
+    if (!item.qa_record_id) continue;
+    const existing = evidenceByGate.get(item.qa_record_id) || [];
+    existing.push(item);
+    evidenceByGate.set(item.qa_record_id, existing);
+  }
 
   const actorIds = Array.from(
     new Set(
@@ -194,6 +230,9 @@ export default async function QaPage({
                 const reviewedName = record.accepted_by
                   ? actorNames.get(record.accepted_by)
                   : null;
+                const photos = evidenceByGate.get(record.id) || [];
+                const canAddPhotos =
+                  !locked && !isQaReleased(record.status) && Boolean(gate);
 
                 return (
                   <article
@@ -245,6 +284,53 @@ export default async function QaPage({
                             {previousGate.label} is released.
                           </small>
                         ) : null}
+
+                        <div className="qa-photo-evidence">
+                          <div className="qa-photo-head">
+                            <span>
+                              Photo evidence
+                              {gate?.photoRequired ? " · required" : " · optional"}
+                            </span>
+                            <strong>{photos.length}</strong>
+                          </div>
+
+                          {photos.length > 0 ? (
+                            <div className="qa-photo-grid">
+                              {photos.map((photo) =>
+                                photo.signedUrl ? (
+                                  <a
+                                    key={photo.id}
+                                    href={photo.signedUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    title={photo.file_name || "QA evidence photo"}
+                                  >
+                                    <img
+                                      src={photo.signedUrl}
+                                      alt={photo.file_name || `${record.hold_point} evidence`}
+                                    />
+                                    <span>{photo.file_name || "Evidence photo"}</span>
+                                  </a>
+                                ) : null
+                              )}
+                            </div>
+                          ) : gate?.photoRequired ? (
+                            <small className="qa-photo-required">
+                              At least one photo is required before this gate can be completed.
+                            </small>
+                          ) : (
+                            <small>No photos attached to this gate.</small>
+                          )}
+
+                          {canAddPhotos && gate ? (
+                            <QaEvidenceUpload
+                              projectId={id}
+                              qaRecordId={record.id}
+                              gateOrder={gate.order}
+                              gateLabel={gate.label}
+                            />
+                          ) : null}
+                        </div>
                       </div>
                     </div>
 
