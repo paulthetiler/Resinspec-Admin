@@ -3648,3 +3648,29 @@ button:disabled { opacity:.48; cursor:not-allowed; }
     min-height:42px;
   }
 }
+
+
+/* Person record editing */
+.commercial-grid-wide {
+  grid-column:1 / -1;
+}
+
+.commercial-grid-wide strong {
+  white-space:pre-wrap;
+  line-height:1.45;
+}
+
+.person-active-toggle {
+  min-height:46px;
+  padding:10px 12px;
+  border:1px solid #e1e7e9;
+  border-radius:9px;
+  background:#fbfcfc;
+}
+
+@media (max-width:720px) {
+  .page-heading .person-edit-button {
+    display:inline-flex;
+    min-height:44px;
+  }
+}
