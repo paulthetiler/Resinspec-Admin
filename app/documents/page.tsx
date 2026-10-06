@@ -107,7 +107,51 @@ export default async function DocumentsOverviewPage() {
         </article>
       </section>
 
-      <section className="table-card">
+      <section className="evidence-workflow-list">
+        {projects && projects.length > 0 ? (
+          projects.map((project) => {
+            const rams = latestRams.get(project.id);
+            const qaOpen = qaOpenByProject.get(project.id) || 0;
+            const docCount = docsByProject.get(project.id) || 0;
+
+            return (
+              <article className="evidence-workflow-card" key={project.id}>
+                <div className="evidence-workflow-card-head">
+                  <div>
+                    <span>{project.reference}</span>
+                    <strong>{project.title}</strong>
+                  </div>
+                  <span className="status-badge">{project.status}</span>
+                </div>
+
+                <div className="evidence-workflow-stats">
+                  <span>
+                    <small>RAMS</small>
+                    <strong>{rams ? `${rams.status} · Rev ${rams.version}` : "Missing"}</strong>
+                  </span>
+                  <span>
+                    <small>Files</small>
+                    <strong>{docCount}</strong>
+                  </span>
+                  <span>
+                    <small>QA action</small>
+                    <strong>{qaOpen > 0 ? qaOpen : "Clear"}</strong>
+                  </span>
+                </div>
+
+                <Link
+                  className="primary-button evidence-workflow-open"
+                  href={`/jobs/${project.id}`}
+                >
+                  Open job workflow →
+                </Link>
+              </article>
+            );
+          })
+        ) : null}
+      </section>
+
+      <section className="table-card evidence-desktop-table">
         <div className="table-scroll">
           <table className="data-table">
             <thead>
