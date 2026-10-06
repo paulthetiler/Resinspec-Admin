@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAnyPermission } from "@/lib/access";
+import { suggestedNextAction } from "@/lib/project-next-actions";
 
 function optionalText(value: FormDataEntryValue | null) {
   const text = String(value ?? "").trim();
@@ -29,16 +30,20 @@ export async function updateProject(formData: FormData) {
 
   if (!projectId || !title) redirect("/jobs");
 
+  const status = String(formData.get("status") ?? "lead");
+  const nextAction =
+    optionalText(formData.get("next_action")) ?? suggestedNextAction(status);
+
   const { error } = await supabase
     .from("projects")
     .update({
       title,
-      status: String(formData.get("status") ?? "lead"),
+      status,
       area_m2: optionalNumber(formData.get("area_m2")),
       programme_start: optionalText(formData.get("programme_start")),
       programme_end: optionalText(formData.get("programme_end")),
       scope_summary: optionalText(formData.get("scope_summary")),
-      next_action: optionalText(formData.get("next_action")),
+      next_action: nextAction,
       next_action_due: optionalText(formData.get("next_action_due")),
       client_id: optionalText(formData.get("client_id")),
       site_id: optionalText(formData.get("site_id")),
