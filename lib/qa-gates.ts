@@ -48,6 +48,7 @@ export const QA_GATES: QaGateDefinition[] = [
     evidence:
       "Record crack / void repairs, edge repairs, movement joints, drains, gullies and any detailing completed.",
     noteRequired: true,
+    photoRequired: true,
     allowNotApplicable: true,
   },
   {
