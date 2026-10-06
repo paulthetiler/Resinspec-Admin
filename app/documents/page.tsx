@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireAnyPermission } from "@/lib/access";
+import { ProjectSearch } from "@/components/project-search";
 
 type RamsRow = {
   project_id: string;
@@ -8,7 +9,15 @@ type RamsRow = {
   approved_at: string | null;
 };
 
-export default async function DocumentsOverviewPage() {
+type DocumentsOverviewPageProps = {
+  searchParams: Promise<{ q?: string }>;
+};
+
+export default async function DocumentsOverviewPage({
+  searchParams,
+}: DocumentsOverviewPageProps) {
+  const { q = "" } = await searchParams;
+  const query = q.trim().toLowerCase();
   const { supabase } = await requireAnyPermission(["documents:view"]);
 
   const [
@@ -19,7 +28,7 @@ export default async function DocumentsOverviewPage() {
   ] = await Promise.all([
     supabase
       .from("projects")
-      .select("id, reference, title, status, programme_start, programme_end")
+      .select("id, reference, title, status, programme_start, programme_end, clients(trading_name, legal_name), sites(name, town_city, postcode)")
       .not("status", "in", "(lost,closed)")
       .order("programme_start", { ascending: true, nullsFirst: false }),
     supabase
@@ -61,6 +70,23 @@ export default async function DocumentsOverviewPage() {
     }
   }
 
+  const visibleProjects = (projects || []).filter((project) => {
+    if (!query) return true;
+    const client = Array.isArray(project.clients) ? project.clients[0] : project.clients;
+    const site = Array.isArray(project.sites) ? project.sites[0] : project.sites;
+    const haystack = [
+      project.reference,
+      project.title,
+      project.status,
+      client?.trading_name,
+      client?.legal_name,
+      site?.name,
+      site?.town_city,
+      site?.postcode,
+    ].filter(Boolean).join(" ").toLowerCase();
+    return haystack.includes(query);
+  });
+
   const approvedRamsCount = (projects || []).filter(
     (project) => latestRams.get(project.id)?.status === "approved"
   ).length;
@@ -83,6 +109,13 @@ export default async function DocumentsOverviewPage() {
       </section>
 
       {error ? <p className="form-error page-error">{error.message}</p> : null}
+
+      <ProjectSearch
+        action="/documents"
+        query={q}
+        resultCount={visibleProjects.length}
+        placeholder="Search ref, job, client, site or postcode"
+      />
 
       <section className="metric-grid">
         <article className="metric-card">
@@ -108,8 +141,8 @@ export default async function DocumentsOverviewPage() {
       </section>
 
       <section className="evidence-workflow-list">
-        {projects && projects.length > 0 ? (
-          projects.map((project) => {
+        {visibleProjects.length > 0 ? (
+          visibleProjects.map((project) => {
             const rams = latestRams.get(project.id);
             const qaOpen = qaOpenByProject.get(project.id) || 0;
             const docCount = docsByProject.get(project.id) || 0;
@@ -165,8 +198,8 @@ export default async function DocumentsOverviewPage() {
               </tr>
             </thead>
             <tbody>
-              {projects && projects.length > 0 ? (
-                projects.map((project) => {
+              {visibleProjects.length > 0 ? (
+                visibleProjects.map((project) => {
                   const rams = latestRams.get(project.id);
                   const qaOpen = qaOpenByProject.get(project.id) || 0;
                   const docCount = docsByProject.get(project.id) || 0;
