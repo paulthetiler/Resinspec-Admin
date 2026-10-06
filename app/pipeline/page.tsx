@@ -2,9 +2,10 @@ import Link from "next/link";
 import { can } from "@/lib/permissions";
 import { requireAnyPermission } from "@/lib/access";
 import { updatePipelineStage } from "./actions";
+import { ProjectSearch } from "@/components/project-search";
 
 type PipelinePageProps = {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; q?: string }>;
 };
 
 const stageLabels: Record<string, string> = {
@@ -25,7 +26,8 @@ function dueText(value: string | null) {
 export default async function PipelinePage({
   searchParams,
 }: PipelinePageProps) {
-  const { error } = await searchParams;
+  const { error, q = "" } = await searchParams;
+  const query = q.trim().toLowerCase();
   const { supabase, role } = await requireAnyPermission(["pipeline:view"]);
 
   const { data: projects, error: loadError } = await supabase
@@ -44,10 +46,27 @@ export default async function PipelinePage({
     ])
     .order("updated_at", { ascending: false });
 
-  const open = (projects || []).filter(
+  const visibleProjects = (projects || []).filter((project) => {
+    if (!query) return true;
+    const client = Array.isArray(project.clients) ? project.clients[0] : project.clients;
+    const site = Array.isArray(project.sites) ? project.sites[0] : project.sites;
+    const haystack = [
+      project.reference,
+      project.title,
+      project.status,
+      project.next_action,
+      client?.trading_name,
+      client?.legal_name,
+      site?.name,
+      site?.town_city,
+    ].filter(Boolean).join(" ").toLowerCase();
+    return haystack.includes(query);
+  });
+
+  const open = visibleProjects.filter(
     (project) => !["won", "lost"].includes(project.status)
   );
-  const decided = (projects || []).filter((project) =>
+  const decided = visibleProjects.filter((project) =>
     ["won", "lost"].includes(project.status)
   );
 
@@ -67,6 +86,13 @@ export default async function PipelinePage({
           </Link>
         ) : null}
       </section>
+
+      <ProjectSearch
+        action="/pipeline"
+        query={q}
+        resultCount={visibleProjects.length}
+        placeholder="Search ref, enquiry, client, site or next action"
+      />
 
       {error || loadError ? (
         <p className="form-error page-error">
