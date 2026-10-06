@@ -27,9 +27,9 @@ Implemented:
 - Private project document storage
 - Document revision / approval / supersede workflow
 - Structured RAMS with approval and crew acknowledgement
-- QA hold points
-- Moisture / environmental readings
-- Batch / mix traceability
+- Sequential ResinSpec QA Gate System with supervisor release between critical stages
+- Moisture / environmental readings enforced before pre-application release
+- Batch / mix traceability enforced before batch-control release
 - People / workforce records
 - Owner-issued staff app access
 - Forced password change for new staff
@@ -37,7 +37,7 @@ Implemented:
 - Applications / invoices
 - Debtor and overdue visibility
 - Snag register
-- Handover record
+- Handover record locked until all QA gates are released
 - Restricted commercial job controls
 - Automatic 5% estimator contingency default
 - Automatic commercial roll-ups
