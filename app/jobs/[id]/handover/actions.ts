@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAnyPermission } from "@/lib/access";
+import { QA_GATES, isQaReleased } from "@/lib/qa-gates";
 
 function optionalText(value: FormDataEntryValue | null) {
   const text = String(value ?? "").trim();
@@ -11,8 +12,39 @@ function optionalText(value: FormDataEntryValue | null) {
 
 function refresh(projectId: string) {
   revalidatePath(`/jobs/${projectId}`);
+  revalidatePath(`/jobs/${projectId}/qa`);
   revalidatePath(`/jobs/${projectId}/handover`);
   revalidatePath("/documents");
+}
+
+async function assertQaReleasedForHandover(
+  supabase: Awaited<ReturnType<typeof requireAnyPermission>>["supabase"],
+  projectId: string
+) {
+  const { data, error } = await supabase
+    .from("qa_records")
+    .select("hold_point, status")
+    .eq("project_id", projectId);
+
+  if (error) {
+    redirect(
+      `/jobs/${projectId}/handover?error=${encodeURIComponent(error.message)}`
+    );
+  }
+
+  const byLabel = new Map((data || []).map((row) => [row.hold_point, row.status]));
+  const blocked = QA_GATES.find((gate) => {
+    const status = byLabel.get(gate.label);
+    return !status || !isQaReleased(status);
+  });
+
+  if (blocked) {
+    redirect(
+      `/jobs/${projectId}/handover?error=${encodeURIComponent(
+        `Handover is locked until QA Gate ${blocked.order} — ${blocked.label} — is released`
+      )}`
+    );
+  }
 }
 
 export async function addSnag(formData: FormData) {
@@ -118,6 +150,10 @@ export async function saveHandover(formData: FormData) {
 
   const status = String(formData.get("status") ?? "draft");
   const now = new Date().toISOString();
+
+  if (["ready", "issued", "accepted"].includes(status)) {
+    await assertQaReleasedForHandover(supabase, projectId);
+  }
 
   const payload = {
     project_id: projectId,

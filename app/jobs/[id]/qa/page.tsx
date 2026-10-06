@@ -2,6 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAnyPermission } from "@/lib/access";
 import {
+  QA_GATES,
+  getQaGateByLabel,
+  isQaReleased,
+  sortQaRecords,
+} from "@/lib/qa-gates";
+import {
   addBatchLog,
   addSiteReading,
   completeQaRecord,
@@ -41,14 +47,15 @@ export default async function QaPage({
   ] = await Promise.all([
     supabase
       .from("projects")
-      .select("id, reference, title, system_id, technical_systems(code, name, revision)")
+      .select("id, reference, title, system_id, technical_systems(code, name, revision, status)")
       .eq("id", id)
       .single(),
     supabase
       .from("qa_records")
-      .select("id, hold_point, status, notes, completed_at, accepted_at")
-      .eq("project_id", id)
-      .order("created_at"),
+      .select(
+        "id, hold_point, status, notes, completed_by, completed_at, accepted_by, accepted_at"
+      )
+      .eq("project_id", id),
     supabase
       .from("site_readings")
       .select("id, reading_type, value, unit, location, notes, recorded_at")
@@ -71,16 +78,53 @@ export default async function QaPage({
     ? project.technical_systems[0]
     : project.technical_systems;
   const canReview = role === "owner" || role === "supervisor";
+  const sortedQa = sortQaRecords(qa || []);
+
+  const actorIds = Array.from(
+    new Set(
+      sortedQa
+        .flatMap((record) => [record.completed_by, record.accepted_by])
+        .filter((value): value is string => Boolean(value))
+    )
+  );
+
+  let actorNames = new Map<string, string>();
+  if (actorIds.length > 0) {
+    const { data: actors } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", actorIds);
+
+    actorNames = new Map(
+      (actors || []).map((actor) => [actor.id, actor.full_name || "Team member"])
+    );
+  }
+
+  const releasedCount = sortedQa.filter((record) =>
+    isQaReleased(record.status)
+  ).length;
+  const currentRecord = sortedQa.find(
+    (record) => !isQaReleased(record.status)
+  );
+  const currentGate = currentRecord
+    ? getQaGateByLabel(currentRecord.hold_point)
+    : null;
+  const progress = QA_GATES.length
+    ? Math.round((releasedCount / QA_GATES.length) * 100)
+    : 0;
 
   return (
     <div className="standalone-page">
       <section className="page-heading">
         <div>
-          <p className="eyebrow">{project.reference} · QA</p>
+          <p className="eyebrow">{project.reference} · QA gate system</p>
           <h1>{project.title}</h1>
           <p>
-            Critical hold points, site readings and batch evidence.
-            {system ? ` System: ${system.code} Rev ${system.revision}.` : ""}
+            Each critical stage must be completed and released before the next
+            stage opens.
+            {system
+              ? ` System: ${system.code} Rev ${system.revision} · ${system.status}.`
+              : " No technical system assigned yet."}
           </p>
         </div>
         <Link className="secondary-button" href={`/jobs/${id}`}>
@@ -91,79 +135,246 @@ export default async function QaPage({
       {error ? <p className="form-error page-error">{error}</p> : null}
 
       <section className="panel qa-panel">
-        <div className="panel-head">
+        <div className="panel-head qa-panel-head">
           <div>
-            <p className="eyebrow">Critical hold points</p>
-            <h2>QA sequence</h2>
+            <p className="eyebrow">ResinSpec QA Gate System</p>
+            <h2>Failure-prevention sequence</h2>
           </div>
 
-          {(!qa || qa.length === 0) ? (
+          {sortedQa.length < QA_GATES.length ? (
             <form action={seedStandardQa}>
               <input type="hidden" name="project_id" value={id} />
               <button className="secondary-button" type="submit">
-                Set up standard QA
+                {sortedQa.length === 0 ? "Set up standard QA" : "Sync QA gates"}
               </button>
             </form>
           ) : null}
         </div>
 
-        {qa && qa.length > 0 ? (
-          <div className="qa-list">
-            {qa.map((record) => (
-              <article className="qa-row" key={record.id}>
-                <div className="qa-row-main">
-                  <span className={`status-badge qa-${record.status}`}>
-                    {record.status.replace("_", " ")}
-                  </span>
-                  <div>
-                    <strong>{record.hold_point}</strong>
-                    {record.notes ? <small>{record.notes}</small> : null}
-                    {record.completed_at ? (
-                      <small>Completed {localDateTime(record.completed_at)}</small>
-                    ) : null}
-                  </div>
-                </div>
+        {sortedQa.length > 0 ? (
+          <>
+            <div className="qa-progress-card">
+              <div>
+                <span>QA release</span>
+                <strong>
+                  {releasedCount} / {QA_GATES.length} gates
+                </strong>
+              </div>
+              <div className="qa-progress-track" aria-label={`${progress}% released`}>
+                <i style={{ width: `${progress}%` }} />
+              </div>
+              <small>
+                {currentGate
+                  ? `Current: Gate ${currentGate.order} · ${currentGate.label}`
+                  : "All QA gates released — handover can proceed."}
+              </small>
+            </div>
 
-                <div className="qa-actions">
-                  {(record.status === "open" || record.status === "rejected") ? (
-                    <form action={completeQaRecord} className="inline-note-form">
-                      <input type="hidden" name="project_id" value={id} />
-                      <input type="hidden" name="record_id" value={record.id} />
-                      <input name="notes" placeholder="Evidence / note" />
-                      <button className="text-button" type="submit">
-                        Mark complete
-                      </button>
-                    </form>
-                  ) : null}
+            <div className="qa-list">
+              {sortedQa.map((record) => {
+                const gate = getQaGateByLabel(record.hold_point);
+                const previousGate = gate
+                  ? QA_GATES.filter((item) => item.order < gate.order).find(
+                      (item) => {
+                        const previousRecord = sortedQa.find(
+                          (candidate) => candidate.hold_point === item.label
+                        );
+                        return !previousRecord || !isQaReleased(previousRecord.status);
+                      }
+                    )
+                  : null;
+                const locked = Boolean(previousGate);
+                const visualStatus =
+                  locked && !isQaReleased(record.status)
+                    ? "locked"
+                    : record.status;
+                const completedName = record.completed_by
+                  ? actorNames.get(record.completed_by)
+                  : null;
+                const reviewedName = record.accepted_by
+                  ? actorNames.get(record.accepted_by)
+                  : null;
 
-                  {canReview && record.status === "complete" ? (
-                    <div className="inline-actions">
-                      <form action={reviewQaRecord}>
-                        <input type="hidden" name="project_id" value={id} />
-                        <input type="hidden" name="record_id" value={record.id} />
-                        <input type="hidden" name="decision" value="accepted" />
-                        <button className="text-button" type="submit">
-                          Accept
-                        </button>
-                      </form>
-                      <form action={reviewQaRecord}>
-                        <input type="hidden" name="project_id" value={id} />
-                        <input type="hidden" name="record_id" value={record.id} />
-                        <input type="hidden" name="decision" value="rejected" />
-                        <button className="text-button danger-text" type="submit">
-                          Reject
-                        </button>
-                      </form>
+                return (
+                  <article
+                    className={`qa-row ${locked ? "qa-row-locked" : ""}`}
+                    key={record.id}
+                  >
+                    <div className="qa-row-main">
+                      <div className="qa-gate-number">
+                        {gate ? String(gate.order).padStart(2, "0") : "—"}
+                      </div>
+                      <div className="qa-gate-copy">
+                        <div className="qa-gate-title">
+                          <span className={`status-badge qa-${visualStatus}`}>
+                            {visualStatus.replaceAll("_", " ")}
+                          </span>
+                          <strong>{record.hold_point}</strong>
+                        </div>
+
+                        {gate ? (
+                          <>
+                            <small>{gate.purpose}</small>
+                            <small className="qa-evidence-copy">
+                              Evidence: {gate.evidence}
+                            </small>
+                          </>
+                        ) : null}
+
+                        {record.notes ? (
+                          <small className="qa-record-note">{record.notes}</small>
+                        ) : null}
+
+                        {record.completed_at ? (
+                          <small>
+                            Completed {localDateTime(record.completed_at)}
+                            {completedName ? ` by ${completedName}` : ""}
+                          </small>
+                        ) : null}
+
+                        {record.accepted_at ? (
+                          <small>
+                            Reviewed {localDateTime(record.accepted_at)}
+                            {reviewedName ? ` by ${reviewedName}` : ""}
+                          </small>
+                        ) : null}
+
+                        {previousGate ? (
+                          <small className="qa-lock-copy">
+                            Locked until Gate {previousGate.order} ·{" "}
+                            {previousGate.label} is released.
+                          </small>
+                        ) : null}
+                      </div>
                     </div>
-                  ) : null}
-                </div>
-              </article>
-            ))}
-          </div>
+
+                    <div className="qa-actions">
+                      {!locked &&
+                      (record.status === "open" ||
+                        record.status === "rejected") ? (
+                        <div className="qa-open-actions">
+                          <form
+                            action={completeQaRecord}
+                            className="inline-note-form"
+                          >
+                            <input
+                              type="hidden"
+                              name="project_id"
+                              value={id}
+                            />
+                            <input
+                              type="hidden"
+                              name="record_id"
+                              value={record.id}
+                            />
+                            <input
+                              name="notes"
+                              required={Boolean(gate?.noteRequired)}
+                              placeholder={
+                                gate?.noteRequired
+                                  ? "Evidence / what was checked"
+                                  : "Optional supporting note"
+                              }
+                            />
+                            <button className="text-button" type="submit">
+                              Complete gate
+                            </button>
+                          </form>
+
+                          {canReview && gate?.allowNotApplicable ? (
+                            <form action={reviewQaRecord}>
+                              <input
+                                type="hidden"
+                                name="project_id"
+                                value={id}
+                              />
+                              <input
+                                type="hidden"
+                                name="record_id"
+                                value={record.id}
+                              />
+                              <input
+                                type="hidden"
+                                name="decision"
+                                value="not_applicable"
+                              />
+                              <button className="text-button" type="submit">
+                                Mark N/A
+                              </button>
+                            </form>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      {canReview && !locked && record.status === "complete" ? (
+                        <div className="qa-review-actions">
+                          <form action={reviewQaRecord}>
+                            <input
+                              type="hidden"
+                              name="project_id"
+                              value={id}
+                            />
+                            <input
+                              type="hidden"
+                              name="record_id"
+                              value={record.id}
+                            />
+                            <input
+                              type="hidden"
+                              name="decision"
+                              value="accepted"
+                            />
+                            <button className="text-button" type="submit">
+                              Accept & release next gate
+                            </button>
+                          </form>
+
+                          <form
+                            action={reviewQaRecord}
+                            className="inline-note-form qa-reject-form"
+                          >
+                            <input
+                              type="hidden"
+                              name="project_id"
+                              value={id}
+                            />
+                            <input
+                              type="hidden"
+                              name="record_id"
+                              value={record.id}
+                            />
+                            <input
+                              type="hidden"
+                              name="decision"
+                              value="rejected"
+                            />
+                            <input
+                              name="review_note"
+                              required
+                              placeholder="Why is this rejected?"
+                            />
+                            <button
+                              className="text-button danger-text"
+                              type="submit"
+                            >
+                              Reject
+                            </button>
+                          </form>
+                        </div>
+                      ) : null}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </>
         ) : (
           <div className="empty-state compact-empty">
-            <strong>QA not set up yet.</strong>
-            <p>Use the standard critical hold points rather than a huge generic checklist.</p>
+            <strong>QA gates not set up yet.</strong>
+            <p>
+              Start the standard ResinSpec sequence. Once live, a later gate
+              cannot be released before the earlier critical stage is accepted.
+            </p>
           </div>
         )}
       </section>
@@ -237,7 +448,12 @@ export default async function QaPage({
                 </div>
               ))}
             </div>
-          ) : null}
+          ) : (
+            <p className="qa-support-note">
+              Gate 4 requires moisture, ambient temperature, slab temperature
+              and relative humidity readings before release.
+            </p>
+          )}
         </section>
 
         <section className="panel">
@@ -253,7 +469,11 @@ export default async function QaPage({
 
             <label className="field">
               <span>Product *</span>
-              <input name="product" required placeholder="Body coat / topcoat product" />
+              <input
+                name="product"
+                required
+                placeholder="Primer / body coat / topcoat"
+              />
             </label>
 
             <div className="form-grid">
@@ -275,11 +495,21 @@ export default async function QaPage({
               </label>
               <label className="field">
                 <span>Mix seconds</span>
-                <input name="mix_duration_seconds" type="number" min="0" step="1" />
+                <input
+                  name="mix_duration_seconds"
+                  type="number"
+                  min="0"
+                  step="1"
+                />
               </label>
               <label className="field">
                 <span>Coverage m²</span>
-                <input name="coverage_area_m2" type="number" min="0" step="0.01" />
+                <input
+                  name="coverage_area_m2"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                />
               </label>
               <label className="field">
                 <span>Ambient °C</span>
@@ -323,7 +553,12 @@ export default async function QaPage({
                 </div>
               ))}
             </div>
-          ) : null}
+          ) : (
+            <p className="qa-support-note">
+              Gate 6 cannot be released until at least one batch / mix record
+              exists for the job.
+            </p>
+          )}
         </section>
       </div>
     </div>
