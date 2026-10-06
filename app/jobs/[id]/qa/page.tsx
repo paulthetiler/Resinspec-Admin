@@ -163,9 +163,17 @@ export default async function QaPage({
               : " No technical system assigned yet."}
           </p>
         </div>
-        <Link className="secondary-button" href={`/jobs/${id}`}>
-          Back to job
-        </Link>
+        <div className="heading-actions">
+          <Link
+            className="secondary-button"
+            href={`/jobs/${id}/handover/report`}
+          >
+            QA / handover report
+          </Link>
+          <Link className="secondary-button" href={`/jobs/${id}`}>
+            Back to job
+          </Link>
+        </div>
       </section>
 
       {error ? <p className="form-error page-error">{error}</p> : null}
