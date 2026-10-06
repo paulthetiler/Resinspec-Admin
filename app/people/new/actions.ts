@@ -52,15 +52,35 @@ export async function createPerson(formData: FormData) {
   if (can(role, "financials:view")) {
     const dayRate = optionalNumber(formData.get("day_rate"));
     const hourlyRate = optionalNumber(formData.get("hourly_rate"));
+    const mileageRate = optionalNumber(formData.get("mileage_rate"));
     const away = optionalNumber(formData.get("working_away_allowance"));
+    const commercialNotes = optionalText(formData.get("commercial_notes"));
 
-    if (dayRate !== null || hourlyRate !== null || away !== null) {
-      await supabase.from("people_commercials").insert({
-        person_id: person.id,
-        day_rate: dayRate,
-        hourly_rate: hourlyRate,
-        working_away_allowance: away,
-      });
+    if (
+      dayRate !== null ||
+      hourlyRate !== null ||
+      mileageRate !== null ||
+      away !== null ||
+      commercialNotes !== null
+    ) {
+      const { error: commercialError } = await supabase
+        .from("people_commercials")
+        .insert({
+          person_id: person.id,
+          day_rate: dayRate,
+          hourly_rate: hourlyRate,
+          mileage_rate: mileageRate,
+          working_away_allowance: away,
+          commercial_notes: commercialNotes,
+        });
+
+      if (commercialError) {
+        redirect(
+          `/people/${person.id}?commercial_error=${encodeURIComponent(
+            commercialError.message
+          )}`
+        );
+      }
     }
   }
 
