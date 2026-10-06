@@ -20,7 +20,9 @@ type PrestartSnapshot = {
   survey_id: string | null;
   survey_updated_at: string | null;
   system_id: string | null;
+  system_updated_at: string | null;
   rams_id: string | null;
+  rams_updated_at: string | null;
   site_id: string | null;
   site_updated_at: string | null;
   programme_start: string | null;
@@ -28,6 +30,7 @@ type PrestartSnapshot = {
   area_m2: number | string | null;
   scope_summary: string | null;
   crew_count: number;
+  crew_fingerprint: string;
 };
 
 function firstRelation<T>(value: T | T[] | null | undefined): T | null {
@@ -53,13 +56,13 @@ export async function getPrestartState(
     { data: project, error: projectError },
     { data: survey, error: surveyError },
     { data: ramsRows, error: ramsError },
-    { count: crewCount, error: crewError },
+    { data: crewRows, error: crewError },
     { data: release, error: releaseError },
   ] = await Promise.all([
     supabase
       .from("projects")
       .select(
-        "id, reference, title, status, client_id, site_id, area_m2, programme_start, programme_end, scope_summary, system_id, sites(id, address_line_1, postcode, updated_at), technical_systems(id, code, name, status, revision)"
+        "id, reference, title, status, client_id, site_id, area_m2, programme_start, programme_end, scope_summary, system_id, sites(id, address_line_1, postcode, updated_at), technical_systems(id, code, name, status, revision, updated_at)"
       )
       .eq("id", projectId)
       .single(),
@@ -72,14 +75,15 @@ export async function getPrestartState(
       .maybeSingle(),
     supabase
       .from("rams_documents")
-      .select("id, version, status, approved_at")
+      .select("id, version, status, approved_at, updated_at")
       .eq("project_id", projectId)
       .order("version", { ascending: false })
       .limit(1),
     supabase
       .from("project_assignments")
-      .select("id", { count: "exact", head: true })
-      .eq("project_id", projectId),
+      .select("id, user_id, person_id, assignment_role, starts_on, ends_on")
+      .eq("project_id", projectId)
+      .order("id", { ascending: true }),
     supabase
       .from("prestart_releases")
       .select("*")
@@ -97,7 +101,17 @@ export async function getPrestartState(
   const site = firstRelation(project.sites);
   const system = firstRelation(project.technical_systems);
   const latestRams = ramsRows?.[0] ?? null;
-  const assignedCrew = crewCount ?? 0;
+  const assignedCrew = crewRows?.length ?? 0;
+  const crewFingerprint = JSON.stringify(
+    (crewRows || []).map((row) => ({
+      id: row.id,
+      user_id: row.user_id,
+      person_id: row.person_id,
+      assignment_role: row.assignment_role,
+      starts_on: row.starts_on,
+      ends_on: row.ends_on,
+    }))
+  );
 
   const authorisedStatuses = new Set([
     "won",
@@ -200,7 +214,9 @@ export async function getPrestartState(
     survey_id: survey?.id ?? null,
     survey_updated_at: survey?.updated_at ?? null,
     system_id: project.system_id ?? null,
+    system_updated_at: system?.updated_at ?? null,
     rams_id: latestRams?.id ?? null,
+    rams_updated_at: latestRams?.updated_at ?? null,
     site_id: project.site_id ?? null,
     site_updated_at: site?.updated_at ?? null,
     programme_start: project.programme_start ?? null,
@@ -208,6 +224,7 @@ export async function getPrestartState(
     area_m2: project.area_m2 ?? null,
     scope_summary: project.scope_summary ?? null,
     crew_count: assignedCrew,
+    crew_fingerprint: crewFingerprint,
   };
 
   const releaseCurrent = Boolean(
@@ -216,14 +233,17 @@ export async function getPrestartState(
       release.survey_id === snapshot.survey_id &&
       release.survey_updated_at === snapshot.survey_updated_at &&
       release.system_id === snapshot.system_id &&
+      release.system_updated_at === snapshot.system_updated_at &&
       release.rams_id === snapshot.rams_id &&
+      release.rams_updated_at === snapshot.rams_updated_at &&
       release.site_id === snapshot.site_id &&
       release.site_updated_at === snapshot.site_updated_at &&
       release.programme_start === snapshot.programme_start &&
       release.programme_end === snapshot.programme_end &&
       sameNumber(release.area_m2, snapshot.area_m2) &&
       (release.scope_summary ?? null) === snapshot.scope_summary &&
-      Number(release.crew_count) === snapshot.crew_count
+      Number(release.crew_count) === snapshot.crew_count &&
+      (release.crew_fingerprint ?? "") === snapshot.crew_fingerprint
   );
 
   return {
