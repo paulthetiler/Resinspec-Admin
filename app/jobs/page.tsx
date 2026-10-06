@@ -82,7 +82,60 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
       ) : null}
 
       {visibleProjects.length > 0 ? (
-        <section className="table-card">
+        <>
+          <section className="evidence-workflow-list jobs-workflow-list">
+            {visibleProjects.map((project) => {
+              const client = Array.isArray(project.clients)
+                ? project.clients[0]
+                : project.clients;
+              const site = Array.isArray(project.sites)
+                ? project.sites[0]
+                : project.sites;
+
+              return (
+                <article className="evidence-workflow-card" key={project.id}>
+                  <div className="evidence-workflow-card-head">
+                    <div>
+                      <span>{project.reference}</span>
+                      <strong>{project.title}</strong>
+                      <small>
+                        {client?.trading_name ||
+                          client?.legal_name ||
+                          site?.name ||
+                          "Client not added"}
+                        {site?.town_city ? ` · ${site.town_city}` : ""}
+                      </small>
+                    </div>
+                    <span className="status-badge">{project.status}</span>
+                  </div>
+
+                  <div className="evidence-workflow-stats jobs-workflow-stats">
+                    <span>
+                      <small>Area</small>
+                      <strong>{project.area_m2 ? `${project.area_m2} m²` : "TBC"}</strong>
+                    </span>
+                    <span>
+                      <small>Programme</small>
+                      <strong>
+                        {project.programme_start || project.programme_end
+                          ? `${project.programme_start ?? "TBC"} → ${project.programme_end ?? "TBC"}`
+                          : "TBC"}
+                      </strong>
+                    </span>
+                  </div>
+
+                  <Link
+                    className="primary-button evidence-workflow-open"
+                    href={`/jobs/${project.id}`}
+                  >
+                    Open job workflow →
+                  </Link>
+                </article>
+              );
+            })}
+          </section>
+
+          <section className="table-card evidence-desktop-table">
           <div className="table-scroll">
             <table className="data-table">
               <thead>
@@ -142,7 +195,8 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
               </tbody>
             </table>
           </div>
-        </section>
+          </section>
+        </>
       ) : query && projects && projects.length > 0 ? (
         <section className="panel">
           <div className="empty-state compact-empty">
