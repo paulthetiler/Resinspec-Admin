@@ -24,6 +24,10 @@ function refresh(projectId: string) {
   revalidatePath("/jobs/" + projectId + "/estimate");
 }
 
+function refreshEstimate(projectId: string) {
+  revalidatePath("/jobs/" + projectId + "/estimate");
+}
+
 function estimateUrl(projectId: string, suffix = "") {
   return "/jobs/" + projectId + "/estimate" + suffix;
 }
@@ -67,22 +71,13 @@ export async function addEstimateItem(formData: FormData) {
   const projectId = String(formData.get("project_id") ?? "");
   const estimateId = String(formData.get("estimate_id") ?? "");
   const description = String(formData.get("description") ?? "").trim();
+  const submissionKey = optionalText(formData.get("submission_key"));
 
   if (!projectId || !estimateId || !description) redirect("/commercial");
 
-  const { data: estimate } = await supabase
-    .from("estimates")
-    .select("status")
-    .eq("id", estimateId)
-    .eq("project_id", projectId)
-    .single();
-
-  if (!estimate || estimate.status !== "draft") {
-    redirect(estimateUrl(projectId, "?error=Only%20draft%20estimates%20can%20be%20edited"));
-  }
-
   const { error } = await supabase.from("estimate_items").insert({
     estimate_id: estimateId,
+    submission_key: submissionKey,
     category: String(formData.get("category") ?? "other"),
     description,
     quantity: numberValue(formData.get("quantity"), 1),
@@ -91,12 +86,11 @@ export async function addEstimateItem(formData: FormData) {
     notes: optionalText(formData.get("notes")),
   });
 
-  if (error) {
+  if (error && error.code !== "23505") {
     redirect(estimateUrl(projectId, "?error=" + encodeURIComponent(error.message)));
   }
 
-  refresh(projectId);
-  redirect(estimateUrl(projectId));
+  refreshEstimate(projectId);
 }
 
 export async function deleteEstimateItem(formData: FormData) {
@@ -107,25 +101,17 @@ export async function deleteEstimateItem(formData: FormData) {
 
   if (!projectId || !estimateId || !itemId) redirect("/commercial");
 
-  const { data: estimate } = await supabase
-    .from("estimates")
-    .select("status")
-    .eq("id", estimateId)
-    .eq("project_id", projectId)
-    .single();
-
-  if (estimate?.status !== "draft") {
-    redirect(estimateUrl(projectId, "?error=Only%20draft%20estimates%20can%20be%20edited"));
-  }
-
-  await supabase
+  const { error } = await supabase
     .from("estimate_items")
     .delete()
     .eq("id", itemId)
     .eq("estimate_id", estimateId);
 
-  refresh(projectId);
-  redirect(estimateUrl(projectId));
+  if (error) {
+    redirect(estimateUrl(projectId, "?error=" + encodeURIComponent(error.message)));
+  }
+
+  refreshEstimate(projectId);
 }
 
 export async function saveEstimateSettings(formData: FormData) {
