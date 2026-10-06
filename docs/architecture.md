@@ -251,6 +251,10 @@ Calculation:
 
 Default contingency is 5%.
 
+Estimator line entry is protected against repeat submissions. Each rendered add-line form carries a submission key, and the database accepts that key only once per estimate. The UI disables the submit control immediately and shows a pending state while the server action runs. Estimate-item writes are also restricted at RLS level to draft estimates.
+
+Successful line adds/removals revalidate only the active estimate instead of redirecting through the full commercial workflow. Exact duplicate lines are surfaced to the user with an explicit cleanup action; they are never deleted automatically.
+
 No resin production rates or material prices should be hard-coded until validated through training, manufacturer data or completed jobs.
 
 ## Quote workflow
