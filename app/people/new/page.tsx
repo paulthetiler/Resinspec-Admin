@@ -60,7 +60,19 @@ export default async function NewPersonPage({
 
           <label className="field">
             <span>Primary role</span>
-            <input name="primary_role" placeholder="Lead installer / helper / supervisor" />
+            <input
+              name="primary_role"
+              list="new-person-role-options"
+              placeholder="Installer / lead installer / supervisor"
+            />
+            <datalist id="new-person-role-options">
+              <option value="Installer" />
+              <option value="Lead installer" />
+              <option value="Supervisor" />
+              <option value="Installer / supervisor" />
+              <option value="Labourer / helper" />
+              <option value="Surveyor" />
+            </datalist>
           </label>
 
           <label className="field">
@@ -100,8 +112,22 @@ export default async function NewPersonPage({
               </label>
 
               <label className="field">
+                <span>Mileage rate £ / mile</span>
+                <input name="mileage_rate" type="number" min="0" step="0.01" />
+              </label>
+
+              <label className="field">
                 <span>Working-away allowance £</span>
                 <input name="working_away_allowance" type="number" min="0" step="0.01" />
+              </label>
+
+              <label className="field field-wide">
+                <span>Commercial / pay notes</span>
+                <textarea
+                  name="commercial_notes"
+                  rows={3}
+                  placeholder="e.g. £230/day lead rate, hotel paid direct, meals included..."
+                />
               </label>
             </>
           ) : null}
