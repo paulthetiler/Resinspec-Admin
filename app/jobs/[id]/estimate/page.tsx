@@ -9,6 +9,7 @@ import {
   createEstimate,
   createEstimateRevision,
   deleteEstimateItem,
+  removeExactDuplicateEstimateItems,
   saveEstimateSettings,
   setEstimateStatus,
 } from "./actions";
@@ -58,6 +59,26 @@ export default async function EstimatePage({
         .order("sort_order")
         .order("created_at")
     : { data: [] };
+
+  const duplicateKeys = new Set<string>();
+  let duplicateCount = 0;
+
+  for (const item of items || []) {
+    const key = JSON.stringify([
+      item.category,
+      item.description,
+      Number(item.quantity),
+      item.unit ?? null,
+      Number(item.unit_cost),
+      item.notes ?? null,
+    ]);
+
+    if (duplicateKeys.has(key)) {
+      duplicateCount += 1;
+    } else {
+      duplicateKeys.add(key);
+    }
+  }
 
   const editable = estimate?.status === "draft";
   const pricePerM2 =
@@ -215,6 +236,33 @@ export default async function EstimatePage({
                 </div>
                 <span className="count-badge">{items?.length || 0}</span>
               </div>
+
+              {editable && duplicateCount > 0 ? (
+                <div className="estimate-duplicate-warning">
+                  <div>
+                    <strong>
+                      {duplicateCount} exact duplicate line{duplicateCount === 1 ? "" : "s"} detected
+                    </strong>
+                    <p>
+                      Same category, description, quantity, unit, cost and notes.
+                      If they were caused by repeated taps, keep one copy and remove the extras.
+                    </p>
+                  </div>
+                  <form action={removeExactDuplicateEstimateItems}>
+                    <input type="hidden" name="project_id" value={id} />
+                    <input
+                      type="hidden"
+                      name="estimate_id"
+                      value={estimate.id}
+                    />
+                    <PendingSubmitButton
+                      idleLabel="Remove exact duplicates"
+                      pendingLabel="Cleaning duplicates…"
+                      className="secondary-button"
+                    />
+                  </form>
+                </div>
+              ) : null}
 
               {items && items.length > 0 ? (
                 <div className="estimate-lines">
