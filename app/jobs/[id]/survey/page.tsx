@@ -329,8 +329,12 @@ export default async function SurveyPage({
             </p>
           )}
 
-          {survey ? (
+          {survey && releaseStatus !== "released" ? (
             <SurveyEvidenceUpload projectId={id} surveyId={survey.id} />
+          ) : survey && releaseStatus === "released" ? (
+            <p className="qa-support-note">
+              Released survey evidence is frozen. Save an amended survey first if new evidence must be added.
+            </p>
           ) : (
             <p className="qa-support-note">
               Save the survey once before adding evidence photos.
