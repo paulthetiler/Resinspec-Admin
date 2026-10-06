@@ -1,7 +1,16 @@
 import Link from "next/link";
 import { requireAnyPermission } from "@/lib/access";
+import { ProjectSearch } from "@/components/project-search";
 
-export default async function EstimatorPage() {
+type EstimatorPageProps = {
+  searchParams: Promise<{ q?: string }>;
+};
+
+export default async function EstimatorPage({
+  searchParams,
+}: EstimatorPageProps) {
+  const { q = "" } = await searchParams;
+  const query = q.trim().toLowerCase();
   const { supabase } = await requireAnyPermission(["commercial:view"]);
 
   const { data: projects, error } = await supabase
@@ -9,6 +18,20 @@ export default async function EstimatorPage() {
     .select("id, reference, title, status, area_m2, updated_at")
     .not("status", "in", "(lost,closed)")
     .order("updated_at", { ascending: false });
+
+  const visibleProjects = (projects || []).filter((project) => {
+    if (!query) return true;
+    const haystack = [
+      project.reference,
+      project.title,
+      project.status,
+      project.area_m2,
+    ]
+      .filter((value) => value !== null && value !== undefined)
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(query);
+  });
 
   return (
     <div className="standalone-page">
@@ -21,6 +44,13 @@ export default async function EstimatorPage() {
           </p>
         </div>
       </section>
+
+      <ProjectSearch
+        action="/estimator"
+        query={q}
+        resultCount={visibleProjects.length}
+        placeholder="Search reference, job or status"
+      />
 
       {error ? (
         <section className="panel">
@@ -38,7 +68,7 @@ export default async function EstimatorPage() {
         </section>
       ) : null}
 
-      {projects && projects.length > 0 ? (
+      {visibleProjects.length > 0 ? (
         <section className="table-card">
           <div className="table-scroll">
             <table className="data-table">
@@ -51,7 +81,7 @@ export default async function EstimatorPage() {
                 </tr>
               </thead>
               <tbody>
-                {projects.map((project) => (
+                {visibleProjects.map((project) => (
                   <tr key={project.id}>
                     <td>
                       <strong>{project.reference}</strong>
@@ -73,6 +103,13 @@ export default async function EstimatorPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </section>
+      ) : query && projects && projects.length > 0 ? (
+        <section className="panel">
+          <div className="empty-state compact-empty">
+            <strong>No matching estimate jobs.</strong>
+            <p>Try the project reference, title or current status.</p>
           </div>
         </section>
       ) : null}
