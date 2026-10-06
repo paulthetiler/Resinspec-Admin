@@ -82,7 +82,8 @@ async function assertPreviousGatesReleased(
 async function assertGateEvidence(
   supabase: Awaited<ReturnType<typeof requireAnyPermission>>["supabase"],
   projectId: string,
-  holdPoint: string
+  holdPoint: string,
+  recordId: string
 ) {
   const gate = getQaGateByLabel(holdPoint);
   if (!gate) return;
@@ -92,12 +93,7 @@ async function assertGateEvidence(
       .from("documents")
       .select("id")
       .eq("project_id", projectId)
-      .eq("qa_record_id", (await supabase
-        .from("qa_records")
-        .select("id")
-        .eq("project_id", projectId)
-        .eq("hold_point", holdPoint)
-        .single()).data?.id ?? "")
+      .eq("qa_record_id", recordId)
       .eq("document_type", "photo")
       .in("status", ["complete", "approved"])
       .limit(1);
@@ -231,7 +227,7 @@ export async function completeQaRecord(formData: FormData) {
   }
 
   await assertPreviousGatesReleased(supabase, projectId, record.hold_point);
-  await assertGateEvidence(supabase, projectId, record.hold_point);
+  await assertGateEvidence(supabase, projectId, record.hold_point, recordId);
 
   const { data: claimsData } = await supabase.auth.getClaims();
   const userId = claimsData?.claims?.sub ?? null;
@@ -282,7 +278,7 @@ export async function reviewQaRecord(formData: FormData) {
     if (record.status !== "complete") {
       qaError(projectId, "The gate must be completed before it can be accepted");
     }
-    await assertGateEvidence(supabase, projectId, record.hold_point);
+    await assertGateEvidence(supabase, projectId, record.hold_point, recordId);
   }
 
   if (decision === "not_applicable") {
