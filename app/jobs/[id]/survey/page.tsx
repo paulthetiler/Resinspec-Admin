@@ -5,6 +5,14 @@ import { requireAnyPermission } from "@/lib/access";
 import { SurveyEvidenceUpload } from "@/components/survey-evidence-upload";
 import { completeSurvey, reviewSurvey, saveSurvey } from "./actions";
 
+function localDateTime(value: string | null | undefined) {
+  if (!value) return "—";
+  return new Date(value).toLocaleString("en-GB", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
+
 type SurveyPageProps = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{
@@ -165,13 +173,171 @@ export default async function SurveyPage({
             {project.area_m2 ? ` · ${project.area_m2} m²` : ""}
           </p>
         </div>
-        <Link className="secondary-button" href={`/jobs/${id}`}>
-          Back to job
-        </Link>
+        <div className="heading-actions">
+          <Link className="secondary-button" href={`/jobs/${id}/prestart`}>
+            Pre-start
+          </Link>
+          <Link className="secondary-button" href={`/jobs/${id}`}>
+            Back to job
+          </Link>
+        </div>
       </section>
 
       {error ? <p className="form-error page-error">{error}</p> : null}
-      {saved ? <p className="form-success page-error">Survey saved.</p> : null}
+      {saved ? (
+        <p className="form-success page-error">
+          Survey saved. Any previous technical release has been reset for review.
+        </p>
+      ) : null}
+      {completed ? (
+        <p className="form-success page-error">
+          Survey completed and ready for technical review.
+        </p>
+      ) : null}
+      {released ? (
+        <p className="form-success page-error">
+          Technical survey released for pre-start.
+        </p>
+      ) : null}
+      {blocked ? (
+        <p className="form-error page-error">
+          Survey blocked. Resolve the review note, save the survey and complete it again.
+        </p>
+      ) : null}
+
+      <section className="survey-control-grid">
+        <article className="panel survey-release-panel">
+          <div className="panel-head">
+            <div>
+              <p className="eyebrow">Survey control</p>
+              <h2>Technical release</h2>
+            </div>
+            <span className={`status-badge survey-${releaseStatus}`}>
+              {releaseStatus.replaceAll("_", " ")}
+            </span>
+          </div>
+
+          <dl className="detail-list">
+            <div>
+              <dt>Technical outcome</dt>
+              <dd>{survey?.technical_outcome?.replaceAll("_", " ") || "Review"}</dd>
+            </div>
+            <div>
+              <dt>Completed</dt>
+              <dd>
+                {localDateTime(survey?.completed_at)}
+                {survey?.completed_by
+                  ? ` · ${actorNames.get(survey.completed_by) || "Team member"}`
+                  : ""}
+              </dd>
+            </div>
+            <div>
+              <dt>Reviewed</dt>
+              <dd>
+                {localDateTime(survey?.reviewed_at)}
+                {survey?.reviewed_by
+                  ? ` · ${actorNames.get(survey.reviewed_by) || "Team member"}`
+                  : ""}
+              </dd>
+            </div>
+            <div>
+              <dt>Review note</dt>
+              <dd>{survey?.review_note || "—"}</dd>
+            </div>
+          </dl>
+
+          {survey && ["draft", "blocked"].includes(releaseStatus) ? (
+            <form action={completeSurvey} className="survey-control-action">
+              <input type="hidden" name="project_id" value={id} />
+              <button className="primary-button" type="submit">
+                Complete survey
+              </button>
+              <small>
+                Requires every technical field to be answered and at least 3 survey photos.
+                Use N/A instead of leaving a condition assumed.
+              </small>
+            </form>
+          ) : null}
+
+          {survey && releaseStatus === "complete" && canReview ? (
+            <div className="survey-review-actions">
+              <form action={reviewSurvey}>
+                <input type="hidden" name="project_id" value={id} />
+                <input type="hidden" name="decision" value="released" />
+                <button className="primary-button" type="submit">
+                  Release for pre-start
+                </button>
+              </form>
+
+              <form action={reviewSurvey} className="compact-form">
+                <input type="hidden" name="project_id" value={id} />
+                <input type="hidden" name="decision" value="blocked" />
+                <label className="field">
+                  <span>Block / review note</span>
+                  <input
+                    name="review_note"
+                    required
+                    placeholder="What must be resolved?"
+                  />
+                </label>
+                <button className="secondary-button" type="submit">
+                  Block survey
+                </button>
+              </form>
+            </div>
+          ) : null}
+
+          {survey && releaseStatus === "complete" && !canReview ? (
+            <p className="qa-support-note">
+              Survey complete. Owner or supervisor technical release required.
+            </p>
+          ) : null}
+        </article>
+
+        <article className="panel">
+          <div className="panel-head">
+            <div>
+              <p className="eyebrow">Site evidence</p>
+              <h2>Survey photos</h2>
+            </div>
+            <span className="count-badge">{signedPhotos.length}</span>
+          </div>
+
+          {signedPhotos.length > 0 ? (
+            <div className="survey-photo-grid">
+              {signedPhotos.map((photo) =>
+                photo.signedUrl ? (
+                  <a
+                    key={photo.id}
+                    href={photo.signedUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={photo.file_name || "Survey evidence"}
+                  >
+                    <img
+                      src={photo.signedUrl}
+                      alt={photo.file_name || "Survey evidence"}
+                    />
+                    <span>{photo.file_name || "Survey evidence"}</span>
+                  </a>
+                ) : null
+              )}
+            </div>
+          ) : (
+            <p className="qa-support-note">
+              Add clear overall, substrate/detail and site/logistics photos. Three are required before completion.
+            </p>
+          )}
+
+          {survey ? (
+            <SurveyEvidenceUpload projectId={id} surveyId={survey.id} />
+          ) : (
+            <p className="qa-support-note">
+              Save the survey once before adding evidence photos.
+            </p>
+          )}
+        </article>
+      </section>
 
       <form action={saveSurvey} className="form-card">
         <input type="hidden" name="project_id" value={id} />
