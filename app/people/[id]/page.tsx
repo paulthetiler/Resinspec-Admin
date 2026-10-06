@@ -6,7 +6,7 @@ import { PersonAccessControl } from "@/components/person-access-control";
 
 type PersonPageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ updated?: string }>;
+  searchParams: Promise<{ updated?: string; commercial_error?: string }>;
 };
 
 function dateText(value: string | null) {
@@ -20,7 +20,7 @@ export default async function PersonPage({
   searchParams,
 }: PersonPageProps) {
   const { id } = await params;
-  const { updated } = await searchParams;
+  const { updated, commercial_error } = await searchParams;
   const { supabase, role } = await requireAnyPermission(["people:view"]);
 
   const { data: person } = await supabase
@@ -69,7 +69,10 @@ export default async function PersonPage({
         </div>
         <div className="heading-actions">
           {can(role, "people:manage") ? (
-            <Link className="primary-button" href={`/people/${id}/edit`}>
+            <Link
+              className="primary-button person-edit-button"
+              href={`/people/${id}/edit`}
+            >
               Edit person
             </Link>
           ) : null}
@@ -81,6 +84,11 @@ export default async function PersonPage({
 
       {updated ? (
         <p className="form-success page-error">Person record updated.</p>
+      ) : null}
+      {commercial_error ? (
+        <p className="form-error page-error">
+          Person was created, but the commercial details could not be saved: {commercial_error}
+        </p>
       ) : null}
 
       <section className="detail-grid">
