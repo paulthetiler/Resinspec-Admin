@@ -6,6 +6,7 @@ import { PersonAccessControl } from "@/components/person-access-control";
 
 type PersonPageProps = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ updated?: string }>;
 };
 
 function dateText(value: string | null) {
@@ -14,8 +15,12 @@ function dateText(value: string | null) {
     : "—";
 }
 
-export default async function PersonPage({ params }: PersonPageProps) {
+export default async function PersonPage({
+  params,
+  searchParams,
+}: PersonPageProps) {
   const { id } = await params;
+  const { updated } = await searchParams;
   const { supabase, role } = await requireAnyPermission(["people:view"]);
 
   const { data: person } = await supabase
@@ -62,10 +67,21 @@ export default async function PersonPage({ params }: PersonPageProps) {
             {person.email ? ` · ${person.email}` : ""}
           </p>
         </div>
-        <Link className="secondary-button" href="/people">
-          Back to people
-        </Link>
+        <div className="heading-actions">
+          {can(role, "people:manage") ? (
+            <Link className="primary-button" href={`/people/${id}/edit`}>
+              Edit person
+            </Link>
+          ) : null}
+          <Link className="secondary-button" href="/people">
+            Back to people
+          </Link>
+        </div>
       </section>
+
+      {updated ? (
+        <p className="form-success page-error">Person record updated.</p>
+      ) : null}
 
       <section className="detail-grid">
         <article className="detail-card">
@@ -184,12 +200,24 @@ export default async function PersonPage({ params }: PersonPageProps) {
               <strong>{commercial?.hourly_rate ? `£${commercial.hourly_rate}` : "—"}</strong>
             </div>
             <div>
+              <span>Mileage</span>
+              <strong>
+                {commercial?.mileage_rate
+                  ? `£${commercial.mileage_rate}/mile`
+                  : "—"}
+              </strong>
+            </div>
+            <div>
               <span>Working away</span>
               <strong>
                 {commercial?.working_away_allowance
                   ? `£${commercial.working_away_allowance}`
                   : "—"}
               </strong>
+            </div>
+            <div className="commercial-grid-wide">
+              <span>Commercial / pay notes</span>
+              <strong>{commercial?.commercial_notes || "—"}</strong>
             </div>
           </div>
         </section>
