@@ -1886,3 +1886,136 @@ button:disabled { opacity:.48; cursor:not-allowed; }
     justify-content:flex-start;
   }
 }
+
+
+/* QA gate photo evidence */
+.qa-photo-evidence {
+  margin-top:12px;
+  padding-top:12px;
+  border-top:1px solid #e7ebed;
+}
+
+.qa-photo-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:9px;
+}
+
+.qa-photo-head span {
+  color:#66777f;
+  font-size:9px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+
+.qa-photo-head strong {
+  display:grid;
+  place-items:center;
+  min-width:24px;
+  height:24px;
+  border-radius:999px;
+  background:#eef6f5;
+  color:#527d77;
+  font-size:9px;
+}
+
+.qa-photo-grid {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  margin-bottom:10px;
+}
+
+.qa-photo-grid a {
+  min-width:0;
+  overflow:hidden;
+  border:1px solid #e2e7e9;
+  border-radius:9px;
+  background:white;
+}
+
+.qa-photo-grid img {
+  display:block;
+  width:100%;
+  aspect-ratio:4/3;
+  object-fit:cover;
+  background:#eef1f2;
+}
+
+.qa-photo-grid span {
+  display:block;
+  overflow:hidden;
+  padding:6px 7px;
+  color:#61727a;
+  font-size:8px;
+  font-weight:700;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.qa-photo-required {
+  display:block;
+  margin-bottom:10px;
+  color:#8d6327 !important;
+  font-weight:800;
+}
+
+.qa-photo-upload {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  align-items:end;
+  margin-top:10px;
+}
+
+.qa-photo-upload label {
+  min-width:0;
+}
+
+.qa-photo-upload label > span {
+  display:block;
+  margin-bottom:6px;
+  color:#6e7d84;
+  font-size:8px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+
+.qa-photo-upload input[type="file"] {
+  width:100%;
+  padding:8px;
+  border:1px dashed #ced8dc;
+  border-radius:8px;
+  background:#fff;
+  color:#66777f;
+  font-size:9px;
+}
+
+.qa-photo-upload .secondary-button {
+  min-height:38px;
+}
+
+.qa-photo-message {
+  grid-column:1 / -1;
+  color:#587078 !important;
+  font-size:9px !important;
+}
+
+@media (max-width: 720px) {
+  .qa-photo-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .qa-photo-upload {
+    grid-template-columns:1fr;
+    align-items:stretch;
+  }
+
+  .qa-photo-upload .secondary-button {
+    width:100%;
+  }
+}
