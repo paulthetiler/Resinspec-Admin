@@ -114,6 +114,64 @@ export async function deleteEstimateItem(formData: FormData) {
   refreshEstimate(projectId);
 }
 
+export async function removeExactDuplicateEstimateItems(
+  formData: FormData
+) {
+  const { supabase } = await requireAnyPermission(["commercial:edit"]);
+  const projectId = String(formData.get("project_id") ?? "");
+  const estimateId = String(formData.get("estimate_id") ?? "");
+
+  if (!projectId || !estimateId) redirect("/commercial");
+
+  const { data: items, error: loadError } = await supabase
+    .from("estimate_items")
+    .select("id,category,description,quantity,unit,unit_cost,notes,created_at")
+    .eq("estimate_id", estimateId)
+    .order("created_at", { ascending: true });
+
+  if (loadError) {
+    redirect(
+      estimateUrl(projectId, "?error=" + encodeURIComponent(loadError.message))
+    );
+  }
+
+  const seen = new Set<string>();
+  const duplicateIds: string[] = [];
+
+  for (const item of items || []) {
+    const key = JSON.stringify([
+      item.category,
+      item.description,
+      Number(item.quantity),
+      item.unit ?? null,
+      Number(item.unit_cost),
+      item.notes ?? null,
+    ]);
+
+    if (seen.has(key)) {
+      duplicateIds.push(item.id);
+    } else {
+      seen.add(key);
+    }
+  }
+
+  if (duplicateIds.length > 0) {
+    const { error } = await supabase
+      .from("estimate_items")
+      .delete()
+      .eq("estimate_id", estimateId)
+      .in("id", duplicateIds);
+
+    if (error) {
+      redirect(
+        estimateUrl(projectId, "?error=" + encodeURIComponent(error.message))
+      );
+    }
+  }
+
+  refreshEstimate(projectId);
+}
+
 export async function saveEstimateSettings(formData: FormData) {
   const { supabase } = await requireAnyPermission(["commercial:edit"]);
   const projectId = String(formData.get("project_id") ?? "");
