@@ -365,7 +365,7 @@ export default async function JobPage({ params }: JobPageProps) {
               </dd>
             </div>
             <div>
-              <dt>Next action</dt>
+              <dt>Office next action</dt>
               <dd>
                 {project.next_action || "None"}
                 {project.next_action_due ? ` · ${project.next_action_due}` : ""}
