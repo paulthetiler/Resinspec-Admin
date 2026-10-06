@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAnyPermission } from "@/lib/access";
+import { ProjectStatusNextAction } from "@/app/jobs/components/project-status-next-action";
 import {
   createClientForProject,
   createSiteForProject,
@@ -76,24 +77,11 @@ export default async function EditProjectPage({
             <input name="title" required defaultValue={project.title} />
           </label>
 
-          <label className="field">
-            <span>Status</span>
-            <select name="status" defaultValue={project.status}>
-              <option value="lead">Lead</option>
-              <option value="qualifying">Qualifying</option>
-              <option value="survey">Survey</option>
-              <option value="estimating">Estimating</option>
-              <option value="quoted">Quoted</option>
-              <option value="won">Won</option>
-              <option value="prestart">Pre-start</option>
-              <option value="live">Live</option>
-              <option value="handover">Handover</option>
-              <option value="invoiced">Invoiced</option>
-              <option value="paid">Paid</option>
-              <option value="closed">Closed</option>
-              <option value="lost">Lost</option>
-            </select>
-          </label>
+          <ProjectStatusNextAction
+            initialStatus={project.status}
+            initialAction={project.next_action}
+            initialDue={project.next_action_due}
+          />
 
           <label className="field">
             <span>Area m²</span>
@@ -168,23 +156,6 @@ export default async function EditProjectPage({
               name="scope_summary"
               rows={5}
               defaultValue={project.scope_summary ?? ""}
-            />
-          </label>
-
-          <label className="field">
-            <span>Next action</span>
-            <input
-              name="next_action"
-              defaultValue={project.next_action ?? ""}
-            />
-          </label>
-
-          <label className="field">
-            <span>Next action due</span>
-            <input
-              name="next_action_due"
-              type="date"
-              defaultValue={project.next_action_due ?? ""}
             />
           </label>
         </div>
