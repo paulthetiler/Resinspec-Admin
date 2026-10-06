@@ -282,6 +282,25 @@ Non-draft/non-cancelled invoices/applications automatically update:
 
 Commercial dashboard surfaces overdue and due-soon debtor records.
 
+## Site workflow UX
+
+The job page is the operational entry point for site staff.
+
+The workflow is derived from controlled project state rather than relying on a manually typed next-action field. It presents:
+
+- one dominant **Next action**
+- large touch targets for Survey, System, RAMS, Crew, Pre-start, Installation QA and Handover
+- live QA gate progress
+- locked / blocked / current / complete visual states
+- a sticky next-action control on tablet and small screens
+- supporting admin tools collapsed beneath the workflow instead of competing with it
+
+At tablet widths the desktop sidebar gives way to the bottom navigation so an 8-inch site tablet has the full screen available for the workflow.
+
+The Documents & QA overview also switches from the wide desktop table to job cards with a single large **Open job workflow** action.
+
+The manual `projects.next_action` field remains available for office/admin notes, but it is not the source of truth for the site installation sequence.
+
 ## Worker experience
 
 Target worker path:
