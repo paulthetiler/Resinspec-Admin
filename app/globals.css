@@ -2579,3 +2579,256 @@ button:disabled { opacity:.48; cursor:not-allowed; }
     page-break-inside:avoid;
   }
 }
+
+
+/* Survey release and pre-start controls */
+.survey-control-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-bottom:16px;
+}
+
+.survey-release-panel {
+  min-height:0;
+}
+
+.survey-control-action,
+.survey-review-actions {
+  margin-top:18px;
+  padding-top:16px;
+  border-top:1px solid var(--light);
+}
+
+.survey-control-action {
+  display:grid;
+  gap:8px;
+}
+
+.survey-control-action small {
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.5;
+}
+
+.survey-review-actions {
+  display:grid;
+  gap:12px;
+}
+
+.survey-draft {
+  background:#eef0f1;
+  color:#66747b;
+}
+
+.survey-complete {
+  background:#fff7df;
+  color:#81651f;
+}
+
+.survey-released {
+  background:#edf7f3;
+  color:#4e7c70;
+}
+
+.survey-blocked {
+  background:#fff0f0;
+  color:#944646;
+}
+
+.survey-photo-grid {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin-bottom:14px;
+}
+
+.survey-photo-grid a {
+  min-width:0;
+  overflow:hidden;
+  border:1px solid #e2e7e9;
+  border-radius:9px;
+  background:white;
+}
+
+.survey-photo-grid img {
+  display:block;
+  width:100%;
+  aspect-ratio:4/3;
+  object-fit:cover;
+  background:#eef1f2;
+}
+
+.survey-photo-grid span {
+  display:block;
+  overflow:hidden;
+  padding:6px 7px;
+  color:#61727a;
+  font-size:8px;
+  font-weight:700;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.survey-photo-upload input[type="file"] {
+  width:100%;
+  padding:9px;
+  border:1px dashed #ced8dc;
+  border-radius:8px;
+  background:#fff;
+  color:#66777f;
+  font-size:10px;
+}
+
+.prestart-metrics {
+  margin-bottom:16px;
+}
+
+.prestart-panel {
+  margin-bottom:16px;
+}
+
+.prestart-check-list {
+  display:grid;
+  gap:8px;
+}
+
+.prestart-check {
+  display:grid;
+  grid-template-columns:38px minmax(0,1fr) auto;
+  gap:12px;
+  align-items:center;
+  padding:13px;
+  border:1px solid #e5e9eb;
+  border-radius:10px;
+  background:#fbfcfc;
+}
+
+.prestart-check.is-pass {
+  border-color:#dce9e6;
+  background:#f8fbfa;
+}
+
+.prestart-check.is-blocked {
+  border-color:#ecd6d6;
+  background:#fffafa;
+}
+
+.prestart-check-number {
+  display:grid;
+  place-items:center;
+  width:36px;
+  height:36px;
+  border-radius:9px;
+  background:var(--slate);
+  color:white;
+  font-size:9px;
+  font-weight:900;
+}
+
+.prestart-check.is-blocked .prestart-check-number {
+  background:#8f5757;
+}
+
+.prestart-check-copy {
+  min-width:0;
+}
+
+.prestart-check-copy > div {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:7px;
+}
+
+.prestart-check-copy strong {
+  color:var(--slate);
+  font-size:12px;
+}
+
+.prestart-check-copy p {
+  margin:4px 0 0;
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.45;
+}
+
+.prestart-released {
+  background:#edf7f3;
+  color:#4e7c70;
+}
+
+.prestart-stale {
+  background:#fff7df;
+  color:#81651f;
+}
+
+.prestart-blocked {
+  background:#fff0f0;
+  color:#944646;
+}
+
+.prestart-stale-note {
+  margin:0 0 16px;
+  padding:12px 14px;
+  border:1px solid #ecdcae;
+  border-radius:10px;
+  background:#fff7e5;
+  color:#755c24;
+  font-size:11px;
+  line-height:1.55;
+}
+
+.prestart-stale-note strong {
+  color:#6a5018;
+}
+
+.prestart-stale-note .text-button {
+  margin-left:7px;
+}
+
+.prestart-release-grid {
+  align-items:start;
+}
+
+.prestart-action-form {
+  margin-top:16px;
+}
+
+.qa-prestart-note {
+  margin-bottom:16px;
+}
+
+.qa-prestart-note.foundation-note {
+  justify-content:space-between;
+}
+
+@media (max-width: 720px) {
+  .survey-control-grid {
+    grid-template-columns:1fr;
+  }
+
+  .survey-photo-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .prestart-check {
+    grid-template-columns:34px minmax(0,1fr);
+    align-items:start;
+  }
+
+  .prestart-check-number {
+    width:32px;
+    height:32px;
+  }
+
+  .prestart-check > .text-button {
+    grid-column:2;
+    justify-self:start;
+  }
+
+  .qa-prestart-note.foundation-note {
+    align-items:flex-start;
+    flex-wrap:wrap;
+  }
+}
