@@ -3674,3 +3674,53 @@ button:disabled { opacity:.48; cursor:not-allowed; }
     min-height:44px;
   }
 }
+
+
+/* Estimator interaction feedback */
+button[aria-busy="true"] {
+  cursor:wait;
+}
+
+button:disabled {
+  opacity:.62;
+  cursor:not-allowed;
+}
+
+.pending-button-content {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+}
+
+.pending-spinner {
+  width:12px;
+  height:12px;
+  border:2px solid currentColor;
+  border-right-color:transparent;
+  border-radius:50%;
+  animation:pending-spin .7s linear infinite;
+}
+
+@keyframes pending-spin {
+  to { transform:rotate(360deg); }
+}
+
+.estimate-submit-hint {
+  display:block;
+  margin-top:7px;
+  color:var(--muted);
+  font-size:9px;
+  line-height:1.45;
+  text-align:center;
+}
+
+.estimate-lines + .completed-actions {
+  margin-top:12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pending-spinner {
+    animation:none;
+  }
+}
