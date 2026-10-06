@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createProject } from "./actions";
 import { requireAnyPermission } from "@/lib/access";
+import { ProjectStatusNextAction } from "@/app/jobs/components/project-status-next-action";
 
 type NewProjectPageProps = {
   searchParams: Promise<{ error?: string }>;
@@ -36,19 +37,7 @@ export default async function NewProjectPage({
             <input name="title" required placeholder="e.g. Manchester food production floor" />
           </label>
 
-          <label className="field">
-            <span>Status</span>
-            <select name="status" defaultValue="lead">
-              <option value="lead">Lead</option>
-              <option value="qualifying">Qualifying</option>
-              <option value="survey">Survey</option>
-              <option value="estimating">Estimating</option>
-              <option value="quoted">Quoted</option>
-              <option value="won">Won</option>
-              <option value="prestart">Pre-start</option>
-              <option value="live">Live</option>
-            </select>
-          </label>
+          <ProjectStatusNextAction initialStatus="lead" />
 
           <label className="field">
             <span>Area m²</span>
@@ -72,16 +61,6 @@ export default async function NewProjectPage({
               rows={5}
               placeholder="What is ResinSpec being asked to deliver?"
             />
-          </label>
-
-          <label className="field">
-            <span>Next action</span>
-            <input name="next_action" placeholder="Arrange survey" />
-          </label>
-
-          <label className="field">
-            <span>Next action due</span>
-            <input name="next_action_due" type="date" />
           </label>
         </div>
 
