@@ -77,7 +77,7 @@ export default async function DocumentsOverviewPage() {
           <p className="eyebrow">Controlled project evidence</p>
           <h1>Documents & QA</h1>
           <p>
-            One view of RAMS status, project files and unresolved QA across the jobs you can access.
+            Select the job, then follow the Site Workflow. The job screen tells the site team exactly what needs doing next.
           </p>
         </div>
       </section>
@@ -173,26 +173,12 @@ export default async function DocumentsOverviewPage() {
                         )}
                       </td>
                       <td>
-                        <div className="row-actions">
-                          <Link
-                            className="text-button"
-                            href={`/jobs/${project.id}/rams`}
-                          >
-                            RAMS
-                          </Link>
-                          <Link
-                            className="text-button"
-                            href={`/jobs/${project.id}/documents`}
-                          >
-                            Files
-                          </Link>
-                          <Link
-                            className="text-button"
-                            href={`/jobs/${project.id}/qa`}
-                          >
-                            QA
-                          </Link>
-                        </div>
+                        <Link
+                          className="primary-button workflow-open-button"
+                          href={`/jobs/${project.id}`}
+                        >
+                          Open workflow
+                        </Link>
                       </td>
                     </tr>
                   );
