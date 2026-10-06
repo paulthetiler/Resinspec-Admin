@@ -387,7 +387,7 @@ export async function getSiteWorkflowState(
         title: "Set up installation QA",
         detail: "Create the standard eight-gate installation sequence.",
         buttonLabel: "Open QA",
-        href: route(projectId, `/qa#gate-${currentGate.order}`),
+        href: route(projectId, "/qa"),
         blocked: false,
       };
     } else if (!currentQaRecord) {
