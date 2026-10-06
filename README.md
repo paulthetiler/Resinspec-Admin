@@ -39,6 +39,7 @@ Implemented:
 - Debtor and overdue visibility
 - Snag register
 - Handover record locked until all QA gates are released
+- Auto-built client-facing QA & handover report with gate photos, readings, batch traceability, snags and acceptance
 - Restricted commercial job controls
 - Automatic 5% estimator contingency default
 - Automatic commercial roll-ups
