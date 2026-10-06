@@ -63,7 +63,9 @@ export async function releasePrestart(formData: FormData) {
       survey_id: state.snapshot.survey_id,
       survey_updated_at: state.snapshot.survey_updated_at,
       system_id: state.snapshot.system_id,
+      system_updated_at: state.snapshot.system_updated_at,
       rams_id: state.snapshot.rams_id,
+      rams_updated_at: state.snapshot.rams_updated_at,
       site_id: state.snapshot.site_id,
       site_updated_at: state.snapshot.site_updated_at,
       programme_start: state.snapshot.programme_start,
@@ -71,6 +73,7 @@ export async function releasePrestart(formData: FormData) {
       area_m2: state.snapshot.area_m2,
       scope_summary: state.snapshot.scope_summary,
       crew_count: state.snapshot.crew_count,
+      crew_fingerprint: state.snapshot.crew_fingerprint,
       updated_at: now,
     },
     { onConflict: "project_id" }
