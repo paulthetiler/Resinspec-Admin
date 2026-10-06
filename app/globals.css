@@ -3610,3 +3610,41 @@ button:disabled { opacity:.48; cursor:not-allowed; }
     gap:7px;
   }
 }
+
+
+.jobs-workflow-list .evidence-workflow-card-head small {
+  display:block;
+  margin-top:4px;
+  color:var(--muted);
+  font-size:9px;
+  line-height:1.4;
+}
+
+.jobs-workflow-stats {
+  grid-template-columns:.7fr 1.5fr;
+}
+
+@media (max-width: 900px) {
+  .qa-actions .text-button,
+  .prestart-check > .text-button,
+  .row-actions .text-button {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:40px;
+    padding:8px 11px;
+    border:1px solid #d9e2e4;
+    border-radius:8px;
+    background:white;
+  }
+
+  .qa-actions .danger-text,
+  .row-actions .danger-text {
+    border-color:#edd6d6;
+    background:#fffafa;
+  }
+
+  .heading-actions .secondary-button {
+    min-height:42px;
+  }
+}
