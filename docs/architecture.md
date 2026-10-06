@@ -107,6 +107,9 @@ Additional controls:
 - handover cannot move beyond draft until the complete QA sequence is released
 - completion and review actor / timestamps remain attached to the QA record
 - QA changes continue into the project audit trail
+- the printable QA / handover report is assembled from the same live project records; it is not a duplicate form or separate data store
+- reports remain visibly draft until all QA gates are released and handover is issued or accepted
+- the report contains no restricted commercial data
 
 ### Audit
 
