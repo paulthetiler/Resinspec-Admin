@@ -110,7 +110,7 @@ export async function completeSurvey(formData: FormData) {
     surveyError(projectId, error?.message || "Save the survey before completing it");
   }
 
-  const missing = REQUIRED_SURVEY_FIELDS
+  const missing: string[] = REQUIRED_SURVEY_FIELDS
     .filter(([key]) => !String(survey[key] ?? "").trim())
     .map(([, label]) => label);
 
