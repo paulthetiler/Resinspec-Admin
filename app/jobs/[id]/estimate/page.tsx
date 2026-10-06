@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { randomUUID } from "crypto";
 import { notFound } from "next/navigation";
 import { requireAnyPermission } from "@/lib/access";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import {
   addEstimateItem,
   adoptEstimateAsBudget,
@@ -104,9 +106,10 @@ export default async function EstimatePage({
             <p>Create the first cost build-up for this project.</p>
             <form action={createEstimate}>
               <input type="hidden" name="project_id" value={id} />
-              <button className="primary-button" type="submit">
-                Create estimate
-              </button>
+              <PendingSubmitButton
+                idleLabel="Create estimate"
+                pendingLabel="Creating estimate…"
+              />
             </form>
           </div>
         </section>
@@ -128,17 +131,21 @@ export default async function EstimatePage({
                     <input type="hidden" name="project_id" value={id} />
                     <input type="hidden" name="estimate_id" value={estimate.id} />
                     <input type="hidden" name="status" value="internal_review" />
-                    <button className="text-button" type="submit">
-                      Internal review
-                    </button>
+                    <PendingSubmitButton
+                      idleLabel="Internal review"
+                      pendingLabel="Updating…"
+                      className="text-button"
+                    />
                   </form>
                   <form action={setEstimateStatus}>
                     <input type="hidden" name="project_id" value={id} />
                     <input type="hidden" name="estimate_id" value={estimate.id} />
                     <input type="hidden" name="status" value="issued" />
-                    <button className="text-button" type="submit">
-                      Issue
-                    </button>
+                    <PendingSubmitButton
+                      idleLabel="Issue"
+                      pendingLabel="Issuing…"
+                      className="text-button"
+                    />
                   </form>
                 </>
               ) : null}
@@ -158,9 +165,11 @@ export default async function EstimatePage({
                 <form action={createEstimateRevision}>
                   <input type="hidden" name="project_id" value={id} />
                   <input type="hidden" name="estimate_id" value={estimate.id} />
-                  <button className="text-button" type="submit">
-                    New revision
-                  </button>
+                  <PendingSubmitButton
+                    idleLabel="New revision"
+                    pendingLabel="Creating…"
+                    className="text-button"
+                  />
                 </form>
               ) : null}
 
@@ -168,9 +177,11 @@ export default async function EstimatePage({
                 <form action={adoptEstimateAsBudget}>
                   <input type="hidden" name="project_id" value={id} />
                   <input type="hidden" name="estimate_id" value={estimate.id} />
-                  <button className="text-button" type="submit">
-                    Adopt as budget
-                  </button>
+                  <PendingSubmitButton
+                    idleLabel="Adopt as budget"
+                    pendingLabel="Adopting…"
+                    className="text-button"
+                  />
                 </form>
               ) : null}
             </div>
@@ -231,12 +242,11 @@ export default async function EstimatePage({
                                 value={estimate.id}
                               />
                               <input type="hidden" name="item_id" value={item.id} />
-                              <button
+                              <PendingSubmitButton
+                                idleLabel="Remove"
+                                pendingLabel="Removing…"
                                 className="text-button danger-text"
-                                type="submit"
-                              >
-                                Remove
-                              </button>
+                              />
                             </form>
                           ) : null}
                         </div>
@@ -252,7 +262,7 @@ export default async function EstimatePage({
               )}
 
               {editable ? (
-                <details className="completed-actions" open={!items?.length}>
+                <details className="completed-actions" open>
                   <summary>Add cost line</summary>
                   <form
                     action={addEstimateItem}
@@ -263,6 +273,11 @@ export default async function EstimatePage({
                       type="hidden"
                       name="estimate_id"
                       value={estimate.id}
+                    />
+                    <input
+                      type="hidden"
+                      name="submission_key"
+                      value={randomUUID()}
                     />
 
                     <div className="form-grid">
@@ -301,8 +316,20 @@ export default async function EstimatePage({
                         <span>Unit</span>
                         <input
                           name="unit"
+                          list="estimate-unit-options"
                           placeholder="day / kg / m² / item"
                         />
+                        <datalist id="estimate-unit-options">
+                          <option value="day" />
+                          <option value="hour" />
+                          <option value="m²" />
+                          <option value="kg" />
+                          <option value="bag" />
+                          <option value="kit" />
+                          <option value="item" />
+                          <option value="mile" />
+                          <option value="night" />
+                        </datalist>
                       </label>
                       <label className="field">
                         <span>Unit cost £</span>
@@ -321,12 +348,14 @@ export default async function EstimatePage({
                       <input name="notes" />
                     </label>
 
-                    <button
+                    <PendingSubmitButton
+                      idleLabel="Add cost line"
+                      pendingLabel="Adding cost…"
                       className="secondary-button full-button"
-                      type="submit"
-                    >
-                      Add cost line
-                    </button>
+                    />
+                    <small className="estimate-submit-hint">
+                      One tap is enough. The button locks while the cost is being saved.
+                    </small>
                   </form>
                 </details>
               ) : null}
@@ -395,9 +424,11 @@ export default async function EstimatePage({
                     />
                   </label>
 
-                  <button className="primary-button full-button" type="submit">
-                    Save pricing controls
-                  </button>
+                  <PendingSubmitButton
+                    idleLabel="Save pricing controls"
+                    pendingLabel="Saving pricing…"
+                    className="primary-button full-button"
+                  />
                 </form>
               ) : (
                 <dl className="detail-list">
