@@ -63,6 +63,35 @@ Operational workforce data and pay data are separated.
 
 A technical-system row is a revision. Jobs store the exact `system_id`, preserving the actual approved revision used on the project.
 
+### Survey & pre-start control
+
+The technical survey is controlled rather than treated as a free-form note.
+
+Survey flow:
+
+`draft → complete → released / blocked`
+
+- editing a survey resets any previous technical release
+- completion requires all risk-relevant survey fields to be explicitly answered; use N/A rather than leaving assumptions blank
+- at least three survey photos are required before completion
+- only Owner or Supervisor can technically release the survey
+- only a `suitable` technical outcome can be released for pre-start
+- survey photos live in the private project bucket and are linked to the survey record rather than the general document list
+
+Pre-start release is a start-work gate. It checks:
+
+1. job authorised / won
+2. client, site, area and scope confirmed
+3. programme dates confirmed
+4. technical survey released
+5. approved technical system assigned
+6. latest RAMS approved
+7. crew assigned
+
+A released pre-start record stores the controlled inputs it was based on: survey version timestamp, system record timestamp, RAMS record timestamp, site timestamp, programme, area, scope and the actual crew assignment fingerprint. If any of those inputs change, the release becomes stale and must be re-issued.
+
+QA Gate 1 cannot be completed unless the current project inputs have a valid pre-start release.
+
 ### Site controls
 
 - `rams_documents`
