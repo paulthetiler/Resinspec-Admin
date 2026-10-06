@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { can } from "@/lib/permissions";
 import { requireAnyPermission } from "@/lib/access";
 import { SurveyEvidenceUpload } from "@/components/survey-evidence-upload";
+import { QuickEntryField } from "@/components/quick-entry-field";
 import { completeSurvey, reviewSurvey, saveSurvey } from "./actions";
 
 function localDateTime(value: string | null | undefined) {
@@ -391,172 +392,296 @@ export default async function SurveyPage({
             />
           </label>
 
-          <label className="field field-wide">
-            <span>Substrate condition</span>
-            <textarea
-              name="substrate_condition"
-              rows={3}
-              defaultValue={survey?.substrate_condition ?? ""}
-            />
-          </label>
+          <QuickEntryField
+            name="substrate_condition"
+            label="Substrate condition"
+            defaultValue={survey?.substrate_condition}
+            wide
+            options={[
+              "Sound / good condition",
+              "Minor defects",
+              "Poor / extensive defects",
+              "Uneven / damaged",
+              "Further investigation required",
+              "N/A",
+            ]}
+            placeholder="Tap a common answer or add a short site note."
+          />
 
-          <label className="field field-wide">
-            <span>Contamination</span>
-            <textarea
-              name="contamination_notes"
-              rows={3}
-              defaultValue={survey?.contamination_notes ?? ""}
-              placeholder="Oil, grease, chemicals, laitance, unknown coatings..."
-            />
-          </label>
+          <QuickEntryField
+            name="contamination_notes"
+            label="Contamination"
+            defaultValue={survey?.contamination_notes}
+            wide
+            multi
+            options={[
+              "None visible",
+              "Oil / grease",
+              "Chemical contamination",
+              "Laitance",
+              "Unknown coating",
+              "Further testing required",
+              "N/A",
+            ]}
+            placeholder="Tap what applies. Add detail only where needed."
+          />
 
-          <label className="field field-wide">
-            <span>Cracks / movement joints</span>
-            <textarea
-              name="cracks_and_joints"
-              rows={3}
-              defaultValue={survey?.cracks_and_joints ?? ""}
-            />
-          </label>
+          <QuickEntryField
+            name="cracks_and_joints"
+            label="Cracks / movement joints"
+            defaultValue={survey?.cracks_and_joints}
+            wide
+            multi
+            options={[
+              "None visible",
+              "Hairline cracks",
+              "Cracks require repair",
+              "Movement joints present",
+              "Joints need detailing",
+              "Further investigation required",
+              "N/A",
+            ]}
+          />
 
-          <label className="field field-wide">
-            <span>Preparation approach</span>
-            <textarea
-              name="preparation_notes"
-              rows={4}
-              defaultValue={survey?.preparation_notes ?? ""}
-              placeholder="Grinding / shot blast / scabble / repairs / removal..."
-            />
-          </label>
+          <QuickEntryField
+            name="preparation_notes"
+            label="Preparation approach"
+            defaultValue={survey?.preparation_notes}
+            wide
+            multi
+            rows={3}
+            options={[
+              "Diamond grind",
+              "Shot blast",
+              "Scabble",
+              "Existing coating removal",
+              "Crack / defect repairs",
+              "Edge detailing",
+              "Final industrial vacuum",
+              "Manufacturer review required",
+            ]}
+            placeholder="Select the expected prep and edit if the job needs something different."
+          />
 
           <div className="section-divider field-wide">
             <span>Moisture & environment</span>
           </div>
 
-          <label className="field">
-            <span>Moisture test method</span>
-            <input
-              name="moisture_test_method"
-              defaultValue={survey?.moisture_test_method ?? ""}
-            />
-          </label>
+          <QuickEntryField
+            name="moisture_test_method"
+            label="Moisture test method"
+            defaultValue={survey?.moisture_test_method}
+            rows={2}
+            options={[
+              "RH test",
+              "Moisture meter screening",
+              "Carbide / CM test",
+              "Manufacturer-specified test",
+              "Further test required",
+              "N/A",
+            ]}
+          />
 
-          <label className="field">
-            <span>Moisture summary</span>
-            <input
-              name="moisture_summary"
-              defaultValue={survey?.moisture_summary ?? ""}
-            />
-          </label>
+          <QuickEntryField
+            name="moisture_summary"
+            label="Moisture summary"
+            defaultValue={survey?.moisture_summary}
+            rows={2}
+            options={[
+              "Within system limit",
+              "Elevated / not accepted",
+              "DPM may be required",
+              "Further testing required",
+              "Result pending",
+              "N/A",
+            ]}
+          />
 
-          <label className="field field-wide">
-            <span>Falls / drainage</span>
-            <textarea
-              name="falls_and_drainage"
-              rows={3}
-              defaultValue={survey?.falls_and_drainage ?? ""}
-            />
-          </label>
+          <QuickEntryField
+            name="falls_and_drainage"
+            label="Falls / drainage"
+            defaultValue={survey?.falls_and_drainage}
+            wide
+            multi
+            options={[
+              "No drainage requirement",
+              "Existing falls acceptable",
+              "Falls require correction",
+              "Drains / gullies present",
+              "Drain detailing required",
+              "N/A",
+            ]}
+          />
 
           <div className="section-divider field-wide">
             <span>Site logistics</span>
           </div>
 
-          <label className="field field-wide">
-            <span>Access constraints</span>
-            <textarea
-              name="access_constraints"
-              rows={3}
-              defaultValue={survey?.access_constraints ?? ""}
-            />
-          </label>
+          <QuickEntryField
+            name="access_constraints"
+            label="Access constraints"
+            defaultValue={survey?.access_constraints}
+            wide
+            multi
+            options={[
+              "Good unrestricted access",
+              "Restricted access",
+              "Loading / delivery restrictions",
+              "Stairs / lift access",
+              "Live occupied site",
+              "Permit / induction required",
+              "N/A",
+            ]}
+          />
 
-          <label className="field">
-            <span>Power / water</span>
-            <textarea
-              name="power_and_water"
-              rows={3}
-              defaultValue={survey?.power_and_water ?? ""}
-            />
-          </label>
+          <QuickEntryField
+            name="power_and_water"
+            label="Power / water"
+            defaultValue={survey?.power_and_water}
+            rows={2}
+            multi
+            options={[
+              "Power available",
+              "Water available",
+              "110V required",
+              "Temporary supply required",
+              "Supply location TBC",
+              "N/A",
+            ]}
+          />
 
-          <label className="field">
-            <span>Downtime window</span>
-            <textarea
-              name="downtime_window"
-              rows={3}
-              defaultValue={survey?.downtime_window ?? ""}
-            />
-          </label>
+          <QuickEntryField
+            name="downtime_window"
+            label="Downtime window"
+            defaultValue={survey?.downtime_window}
+            rows={2}
+            options={[
+              "Flexible",
+              "Overnight only",
+              "Weekend shutdown",
+              "24-hour window",
+              "48-hour window",
+              "Exact return-to-service time required",
+            ]}
+          />
 
-          <label className="field field-wide">
-            <span>Programme constraints</span>
-            <textarea
-              name="programme_constraints"
-              rows={3}
-              defaultValue={survey?.programme_constraints ?? ""}
-            />
-          </label>
+          <QuickEntryField
+            name="programme_constraints"
+            label="Programme constraints"
+            defaultValue={survey?.programme_constraints}
+            wide
+            multi
+            options={[
+              "No unusual constraints",
+              "Phased works",
+              "Night work",
+              "Weekend work",
+              "Live site / work around others",
+              "Fast return to service",
+              "Client programme TBC",
+            ]}
+          />
 
           <div className="section-divider field-wide">
             <span>Service requirements</span>
           </div>
 
-          <label className="field field-wide">
-            <span>Service conditions</span>
-            <textarea
-              name="service_conditions"
-              rows={3}
-              defaultValue={survey?.service_conditions ?? ""}
-              placeholder="Traffic, impact, forklift use, wet service, continuous use..."
-            />
-          </label>
+          <QuickEntryField
+            name="service_conditions"
+            label="Service conditions"
+            defaultValue={survey?.service_conditions}
+            wide
+            multi
+            options={[
+              "Pedestrian traffic",
+              "Trolleys / pallet trucks",
+              "Forklift traffic",
+              "Heavy impact",
+              "Wet service",
+              "Continuous operation",
+              "Food / production area",
+            ]}
+            placeholder="Tap all that apply, then add anything unusual."
+          />
 
-          <label className="field">
-            <span>Slip requirement</span>
-            <textarea
-              name="slip_requirement"
-              rows={3}
-              defaultValue={survey?.slip_requirement ?? ""}
-            />
-          </label>
+          <QuickEntryField
+            name="slip_requirement"
+            label="Slip requirement"
+            defaultValue={survey?.slip_requirement}
+            rows={2}
+            options={[
+              "Standard finish",
+              "Enhanced anti-slip",
+              "Wet-area high grip",
+              "Client slip rating specified",
+              "Requirement TBC",
+              "N/A",
+            ]}
+          />
 
-          <label className="field">
-            <span>Hygiene requirement</span>
-            <textarea
-              name="hygiene_requirement"
-              rows={3}
-              defaultValue={survey?.hygiene_requirement ?? ""}
-            />
-          </label>
+          <QuickEntryField
+            name="hygiene_requirement"
+            label="Hygiene requirement"
+            defaultValue={survey?.hygiene_requirement}
+            rows={2}
+            options={[
+              "Standard commercial",
+              "Seamless hygienic finish",
+              "Food production hygiene",
+              "Healthcare / clean area",
+              "Client hygiene spec applies",
+              "N/A",
+            ]}
+          />
 
-          <label className="field">
-            <span>Washdown requirement</span>
-            <textarea
-              name="washdown_requirement"
-              rows={3}
-              defaultValue={survey?.washdown_requirement ?? ""}
-            />
-          </label>
+          <QuickEntryField
+            name="washdown_requirement"
+            label="Washdown requirement"
+            defaultValue={survey?.washdown_requirement}
+            rows={2}
+            options={[
+              "No washdown",
+              "Routine wet cleaning",
+              "Pressure washing",
+              "Hot washdown",
+              "Chemical cleaning",
+              "Requirement TBC",
+            ]}
+          />
 
-          <label className="field">
-            <span>Thermal exposure</span>
-            <textarea
-              name="thermal_exposure"
-              rows={3}
-              defaultValue={survey?.thermal_exposure ?? ""}
-              placeholder="Hot wash, steam, ovens, freezer transition..."
-            />
-          </label>
+          <QuickEntryField
+            name="thermal_exposure"
+            label="Thermal exposure"
+            defaultValue={survey?.thermal_exposure}
+            rows={2}
+            multi
+            options={[
+              "Ambient only",
+              "Hot wash",
+              "Steam",
+              "Oven / hot process",
+              "Freezer / cold store",
+              "Thermal cycling",
+              "N/A",
+            ]}
+          />
 
-          <label className="field field-wide">
-            <span>Chemical exposure</span>
-            <textarea
-              name="chemical_exposure"
-              rows={3}
-              defaultValue={survey?.chemical_exposure ?? ""}
-            />
-          </label>
+          <QuickEntryField
+            name="chemical_exposure"
+            label="Chemical exposure"
+            defaultValue={survey?.chemical_exposure}
+            wide
+            multi
+            options={[
+              "None known",
+              "Cleaning detergents",
+              "Oils / fuels",
+              "Acids / alkalis",
+              "Food acids / sugars",
+              "Client chemical list required",
+              "Manufacturer review required",
+            ]}
+          />
 
           <label className="field field-wide">
             <span>Client requirements / notes</span>
