@@ -87,6 +87,27 @@ async function assertGateEvidence(
   const gate = getQaGateByLabel(holdPoint);
   if (!gate) return;
 
+  if (gate.photoRequired) {
+    const { data: photos, error: photosError } = await supabase
+      .from("documents")
+      .select("id")
+      .eq("project_id", projectId)
+      .eq("qa_record_id", (await supabase
+        .from("qa_records")
+        .select("id")
+        .eq("project_id", projectId)
+        .eq("hold_point", holdPoint)
+        .single()).data?.id ?? "")
+      .eq("document_type", "photo")
+      .in("status", ["complete", "approved"])
+      .limit(1);
+
+    if (photosError) qaError(projectId, photosError.message);
+    if (!photos || photos.length === 0) {
+      qaError(projectId, `Add at least one photo to ${gate.label} before completing the gate`);
+    }
+  }
+
   if (gate.code === "pre_application") {
     const { data: project, error: projectError } = await supabase
       .from("projects")
