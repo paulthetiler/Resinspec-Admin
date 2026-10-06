@@ -275,6 +275,18 @@ export async function getSiteWorkflowState(
       href: route(projectId),
       blocked: true,
     };
+  } else if (!prestart.checks.find((check) => check.code === "site_scope")?.pass) {
+    nextAction = {
+      eyebrow: "Next action",
+      title: "Confirm the site and job scope",
+      detail:
+        "Client, site address, floor area and scope need to be complete before the job can move through pre-start.",
+      buttonLabel: canManageJob(role) ? "Edit job" : "View pre-start block",
+      href: canManageJob(role)
+        ? route(projectId, "/edit")
+        : route(projectId, "/prestart"),
+      blocked: !canManageJob(role),
+    };
   } else if (!surveyReleased) {
     const completeAwaitingReview =
       prestart.survey?.release_status === "complete";
