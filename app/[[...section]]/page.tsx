@@ -3,7 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { AdminShell } from "@/components/admin-shell";
 import { canAccessNav, navigation } from "@/lib/navigation";
 import { can, type Role } from "@/lib/permissions";
-import { createClient } from "@/lib/supabase/server";
+import { getAccessContext } from "@/lib/access";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 type PageProps = {
   params: Promise<{ section?: string[] }>;
@@ -148,8 +149,7 @@ const moduleContent: Record<
   },
 };
 
-async function TodayPage({ role }: { role: Role }) {
-  const supabase = await createClient();
+async function TodayPage({ role, supabase }: { role: Role; supabase: SupabaseClient }) {
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
   const next30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
@@ -550,9 +550,7 @@ export default async function AdminPage({ params }: PageProps) {
   const item = navigation.find((navItem) => navItem.slug === slug);
   if (!item) notFound();
 
-  const supabase = await createClient();
-  const { data } = await supabase.rpc("current_app_role");
-  const role = data as Role | null;
+  const { supabase, role } = await getAccessContext();
 
   if (!role || !["owner", "office", "commercial", "supervisor", "installer"].includes(role)) {
     redirect("/unauthorised");
@@ -565,7 +563,7 @@ export default async function AdminPage({ params }: PageProps) {
 
   return (
     <AdminShell activeSlug={slug} role={role}>
-      {slug === "" ? <TodayPage role={role} /> : <ModulePage slug={slug} />}
+      {slug === "" ? <TodayPage role={role} supabase={supabase} /> : <ModulePage slug={slug} />}
     </AdminShell>
   );
 }
