@@ -142,7 +142,7 @@ export function derivePrestartState(input: {
 /**
  * Why the caller may not (re-)release now, or null when release is allowed.
  * Deliberately independent of QA progress: a progressed Gate 1 never blocks a
- * re-release (this was the pre-TASK #22 deadlock).
+ * re-release (this was the pre-TASK #23 deadlock).
  */
 export function releaseBlockReason(input: {
   role: string | null | undefined;

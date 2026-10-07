@@ -1,4 +1,4 @@
--- TASK #22: pre-start release history + database-enforced release integrity.
+-- TASK #23: pre-start release history + database-enforced release integrity.
 --
 -- Before: one prestart_releases row per project (upserted on project_id),
 -- snapshot computed and written by the app, release rules enforced only in

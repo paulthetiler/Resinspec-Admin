@@ -1,4 +1,4 @@
--- TASK #22 database tests for pre-start release history and integrity.
+-- TASK #23 database tests for pre-start release history and integrity.
 -- Run by scripts/test-db.sh against a throwaway local Postgres:
 --   stub_schema.sql -> legacy fixtures (this file, part 1) -> migration -> tests (part 2)
 -- Every assertion raises on failure; psql runs with ON_ERROR_STOP.
@@ -95,7 +95,7 @@ insert into public.rams_documents (id, project_id, version, status, updated_at) 
   ('00000000-0000-0000-0000-00000000ab01', '00000000-0000-0000-0000-000000000001', 1, 'approved', '2026-10-03 08:00:00+00'),
   ('00000000-0000-0000-0000-00000000ab00', '00000000-0000-0000-0000-000000000000', 1, 'approved', '2026-09-03 08:00:00+00');
 
--- Legacy release row exactly as the pre-#22 app wrote it (JS JSON.stringify
+-- Legacy release row exactly as the pre-TASK #23 app wrote it (JS JSON.stringify
 -- crew fingerprint; PostgREST-format timestamps).
 insert into public.prestart_releases (
   project_id, status, release_note, released_by, released_at,

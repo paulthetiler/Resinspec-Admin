@@ -1,6 +1,6 @@
 -- Minimal stand-in for the live ResinSpec Supabase schema, used ONLY by the
 -- local database tests (scripts/test-db.sh). It reproduces the objects the
--- TASK #22 migration depends on, following the definitions verified in
+-- TASK #23 migration depends on, following the definitions verified in
 -- TASK #21 (supabase/README.md): auth.uid(), private.user_roles,
 -- private.current_user_role(), private.can_access_project(), the tables the
 -- pre-start snapshot reads, and the legacy one-row-per-project

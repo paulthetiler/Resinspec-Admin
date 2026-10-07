@@ -1,6 +1,6 @@
-# Pre-start / live-job state model (TASK #22)
+# Pre-start / live-job state model (TASK #23)
 
-## Before TASK #22 (as found)
+## Before TASK #23 (as found)
 
 - `prestart_releases` held **one row per project** (`upsert … onConflict: project_id`).
   Re-releasing overwrote the previous release; reopening set it back to `draft`.
@@ -33,7 +33,7 @@
    still accepted completions against the stale release, so the hold was
    neither enforced nor resolvable.
 
-## After TASK #22
+## After TASK #23
 
 ### Data
 
