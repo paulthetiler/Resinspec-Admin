@@ -3869,3 +3869,13 @@ button:disabled {
 @media (prefers-reduced-motion:reduce){
  .loading-line,.loading-card,.loading-panel{animation:none}
 }
+
+
+/* Canonical ResinSpec brand asset shared with the public website. */
+.admin-logo{display:block;width:174px;height:auto;max-width:100%}
+.admin-label{display:block;margin-left:4px;color:var(--teal);font-size:8px;font-weight:800;letter-spacing:.18em}
+@media(max-width:720px){
+ .mobile-brand{gap:7px}
+ .mobile-admin-logo{width:128px;height:auto}
+ .mobile-admin-label{margin-left:0;font-size:7px;writing-mode:vertical-rl;letter-spacing:.12em}
+}
