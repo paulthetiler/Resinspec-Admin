@@ -11,7 +11,7 @@ export function SiteWorkflow({ workflow }: Props) {
       <section className="site-workflow">
         <div className="site-workflow-head">
           <div>
-            <p className="eyebrow">Site workflow</p>
+            <p className="eyebrow">What do I do next?</p>
             <h2>{workflow.phaseLabel}</h2>
             <p>
               Follow the job in order. The system shows the next action and
@@ -20,7 +20,7 @@ export function SiteWorkflow({ workflow }: Props) {
           </div>
 
           <div className="site-workflow-phase">
-            <span>Current phase</span>
+            <span>Job stage</span>
             <strong>{workflow.phaseLabel}</strong>
           </div>
         </div>
@@ -40,7 +40,7 @@ export function SiteWorkflow({ workflow }: Props) {
 
           <Link className="site-next-button" href={workflow.nextAction.href}>
             <span>{workflow.nextAction.buttonLabel}</span>
-            <b>Continue →</b>
+            <b>Do this →</b>
           </Link>
         </article>
 
@@ -62,7 +62,7 @@ export function SiteWorkflow({ workflow }: Props) {
 
               <strong>{item.status}</strong>
               <p>{item.detail}</p>
-              <span className="site-workflow-open">Open →</span>
+              <span className="site-workflow-open">View →</span>
             </Link>
           ))}
         </div>
