@@ -9,6 +9,7 @@ const validRoles: Role[] = [
   "commercial",
   "supervisor",
   "installer",
+  "subcontractor",
 ];
 
 export const getAccessContext = cache(async () => {
