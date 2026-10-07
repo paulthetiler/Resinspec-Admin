@@ -173,6 +173,27 @@ export default async function PersonPage({
         </section>
       </div>
 
+
+      {person.engagement_type === "subcontractor" ? (
+        <section className="panel">
+          <div className="panel-head"><div><p className="eyebrow">CIS & status</p><h2>Subcontractor compliance</h2></div></div>
+          <div className="commercial-grid">
+            <div><span>Trading name</span><strong>{person.trading_name || "—"}</strong></div>
+            <div><span>UTR</span><strong>{person.utr || "—"}</strong></div>
+            <div><span>CIS verification</span><strong>{person.cis_verification_number || "Not verified"}</strong></div>
+            <div><span>CIS rate</span><strong>{person.cis_deduction_rate === null ? "—" : `${person.cis_deduction_rate}%`}</strong></div>
+            <div><span>Verified on</span><strong>{dateText(person.cis_verified_on)}</strong></div>
+            <div><span>Status outcome</span><strong>{person.status_outcome ? String(person.status_outcome).replaceAll("_", " ") : "Not checked"}</strong></div>
+            <div><span>Status checked</span><strong>{dateText(person.status_checked_on)}</strong></div>
+            <div><span>Agreement signed</span><strong>{dateText(person.contract_signed_on)}</strong></div>
+            <div className="commercial-grid-wide"><span>Contractor / status notes</span><strong>{person.contractor_notes || "—"}</strong></div>
+          </div>
+          {(!person.cis_verified_on || !person.status_checked_on || !person.contract_signed_on) ? (
+            <p className="form-error page-error">Onboarding incomplete: verify CIS, record the employment-status check and sign the subcontract agreement before first payment.</p>
+          ) : null}
+        </section>
+      ) : null}
+
       {role === "owner" ? (
         <section className="panel">
           <div className="panel-head">
