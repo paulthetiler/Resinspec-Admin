@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { MobileMenu } from "@/components/mobile-menu";
 import { can, type Role } from "@/lib/permissions";
 import { canAccessNav, navigation } from "@/lib/navigation";
 
@@ -17,7 +18,7 @@ export function AdminShell({activeSlug,role,children}:AdminShellProps){
    <div className="sidebar-foot"><span className="status-dot"/><span><strong>Supabase connected</strong><small>Role access enforced</small></span></div>
   </aside>
   <div className="workspace">
-   <header className="topbar"><Link className="mobile-brand" href="/"><img className="admin-logo mobile-admin-logo" src="/resinspec-logo.svg" alt="ResinSpec Flooring" /><span className="admin-label mobile-admin-label">ADMIN</span></Link><div className="user-controls"><div className="user-chip"><span className="avatar">{roleLabels[role].slice(0,2).toUpperCase()}</span><span><strong>Signed in</strong><small>{roleLabels[role]}</small></span></div><form action="/auth/signout" method="post"><button className="signout-button" type="submit">Sign out</button></form></div></header>
+   <header className="topbar"><Link className="mobile-brand" href="/"><img className="admin-logo mobile-admin-logo" src="/resinspec-logo.svg" alt="ResinSpec Flooring" /><span className="admin-label mobile-admin-label">ADMIN</span></Link><div className="user-controls"><MobileMenu items={visibleNavigation.map(item=>({slug:item.slug,label:item.label}))} activeSlug={activeSlug} /><div className="user-chip"><span className="avatar">{roleLabels[role].slice(0,2).toUpperCase()}</span><span><strong>Signed in</strong><small>{roleLabels[role]}</small></span></div><form action="/auth/signout" method="post"><button className="signout-button" type="submit">Sign out</button></form></div></header>
    <main className="main-content">{children}</main>
    <nav className="mobile-nav" aria-label="Mobile admin navigation">
     <Link href="/" className={activeSlug===""?"is-active":""}><span className="mobile-nav-icon">⌂</span><span>Home</span></Link>
