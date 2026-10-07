@@ -26,6 +26,8 @@ export type Permission =
   | "people:manage"
   | "commercial:view"
   | "commercial:edit"
+  | "variations:raise"
+  | "variations:verify"
   | "financials:view"
   | "expenses:submit"
   | "expenses:review"
@@ -57,6 +59,8 @@ export const rolePermissions: Record<Role, Permission[]> = {
     "people:manage",
     "commercial:view",
     "commercial:edit",
+    "variations:raise",
+    "variations:verify",
     "financials:view",
     "expenses:submit",
     "expenses:review",
@@ -81,6 +85,7 @@ export const rolePermissions: Record<Role, Permission[]> = {
     "documents:edit",
     "qa:view",
     "people:view",
+    "variations:raise",
     "expenses:review",
     "issues:review",
     "invoices:review",
@@ -101,6 +106,8 @@ export const rolePermissions: Record<Role, Permission[]> = {
     "people:view",
     "commercial:view",
     "commercial:edit",
+    "variations:raise",
+    "variations:verify",
     "financials:view",
     "expenses:review",
     "issues:review",
@@ -116,6 +123,8 @@ export const rolePermissions: Record<Role, Permission[]> = {
     "qa:view",
     "qa:complete",
     "people:view",
+    "variations:raise",
+    "variations:verify",
     "expenses:submit",
     "issues:submit",
     "issues:review",
@@ -127,6 +136,7 @@ export const rolePermissions: Record<Role, Permission[]> = {
     "documents:view",
     "qa:view",
     "qa:complete",
+    "variations:raise",
     "expenses:submit",
     "issues:submit",
     "invoices:submit",
