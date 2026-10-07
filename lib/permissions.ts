@@ -31,6 +31,8 @@ export type Permission =
   | "expenses:review"
   | "issues:submit"
   | "issues:review"
+  | "invoices:submit"
+  | "invoices:review"
   | "settings:manage";
 
 export const rolePermissions: Record<Role, Permission[]> = {
@@ -60,6 +62,8 @@ export const rolePermissions: Record<Role, Permission[]> = {
     "expenses:review",
     "issues:submit",
     "issues:review",
+    "invoices:submit",
+    "invoices:review",
     "settings:manage",
   ],
   office: [
@@ -79,6 +83,7 @@ export const rolePermissions: Record<Role, Permission[]> = {
     "people:view",
     "expenses:review",
     "issues:review",
+    "invoices:review",
   ],
   commercial: [
     "dashboard:view",
@@ -124,6 +129,7 @@ export const rolePermissions: Record<Role, Permission[]> = {
     "qa:complete",
     "expenses:submit",
     "issues:submit",
+    "invoices:submit",
   ],
 };
 
