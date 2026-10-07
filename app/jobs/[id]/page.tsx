@@ -110,7 +110,7 @@ export default async function JobPage({ params }: JobPageProps) {
       </section>
 
       <SiteWorkflow workflow={workflow} />
-      {(role === "supervisor" || role === "installer") ? (
+      {(role === "supervisor" || role === "installer" || role === "subcontractor") ? (
         <section className="panel">
           <div className="panel-head"><div><p className="eyebrow">Something happened on site?</p><h2>Tell us what happened</h2></div></div>
           <div className="site-workflow-grid">
