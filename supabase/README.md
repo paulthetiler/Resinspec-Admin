@@ -1,6 +1,6 @@
 # ResinSpec Admin — Supabase database baseline
 
-Status: **baseline NOT yet captured; partial policy evidence reviewed; TASK #21 open** (7 October 2026).
+Status: **baseline NOT yet captured; RLS + storage policies reviewed; functions/triggers/constraints pending; TASK #21 open** (7 October 2026).
 
 The live Supabase project (`vsizfxdtmlxygjnlcztf`, eu-west-2) holds the schema,
 RLS policies, triggers, RPCs, storage buckets/policies and three Edge Functions.
@@ -41,70 +41,106 @@ before 6 October) does not appear in the supplied list. Either the list is
 partial or that schema was applied outside the migration history; this
 determines whether migrations alone can rebuild the database.
 
-## Audit classification (updated 7 October 2026, second evidence set)
+## Verified RLS policy summary (third evidence set, 7 October 2026)
 
-Evidence sources: anonymous probe (`scripts/probe-anon-boundary.sh`) and
-read-only extracts supplied by the project owner via the Supabase connector.
-No test users were created and no live data was modified.
+As read from the live project by the owner. `access` = `private.can_access_project(project_id)`;
+`manage` = `private.can_manage_project()` (helper bodies not yet reviewed).
+O/Of/C/S/I = Owner / Office / Commercial / Supervisor / Installer.
+
+| Table | SELECT | INSERT | UPDATE | DELETE |
+| --- | --- | --- | --- | --- |
+| `qa_records` | access | access | access | manage |
+| `batch_logs` | access | access | access | manage |
+| `site_readings` | access | access | access | manage |
+| `snags` | access | access | access | manage |
+| `handover_records` | access | O/Of/C/S + access | O/Of/C/S + access | O/Of/C/S + access |
+| `prestart_releases` | project-scoped | O/S | O/S | — |
+| `worker_expenses` | access AND (own OR O/Of/C/S) | own (`submitted_by = auth.uid()`) + access | O/Of/C + access | — |
+| `subcontractor_invoices` | access AND (own OR O/Of/C) | own + access | O/Of/C + access | — |
+| `user_notifications` | own | O/Of/C | own (USING + WITH CHECK) | — |
+| `site_issues` | access | own (`raised_by`) + access | O/Of/C/S + access | — |
+| `variations` | commercial + access | commercial + access | commercial + access | commercial + access |
+| `surveys` | access | O/Of/C/S + access | O/Of/C/S + access | manage |
+| `technical_systems` | approved OR O/C/S OR attached to accessible project | O | O | O |
+| `rams_documents` | access AND (mgmt/S OR approved) | O/Of/S + access | O/Of/S + access | O |
+| `rams_acknowledgements` | own OR O/Of/S on accessible project | own, approved RAMS, accessible project | — | O |
+| `document_acknowledgements` | own OR project management | own, accessible document | — | manage |
+| `project_actions` | accessible project OR assigned owner OR O/Of/C | O/Of/C/S (+ access if project) | O/Of/C/S (+ access if project) | O/Of/C |
+| `profiles` | own OR O/Of/C/S | own | own OR O/Of | — |
+| `clients`, `sites` | mgmt OR linked to accessible project | manage | manage | manage |
+| `quotes` | O/Of/C + access | O/Of/C + access | O/Of/C + access | O/Of/C + access |
+| `project_commercials` | `can_view_commercial()` | | | |
+| `estimates`, `invoices` | commercial + access | | | |
+| `people_commercials` | O/C | | | |
+| `people` | O/Of/C/S OR self | | | |
+| `audit_events` | role/context sensitive (commercial entities need commercial visibility; quotes O/Of/C; project events O/Of/C/S + access; non-project O/Of/C) | | | |
+
+### Storage (`storage.objects`), all four buckets private
+
+| Bucket | Upload | Read | Update / delete |
+| --- | --- | --- | --- |
+| `project-documents` | project access from project ID in path | matching `documents` row + project access; non-management limited to approved/complete | project management, or document owner while draft |
+| `worker-receipts` | path must start with a project the user is assigned to | file owner OR O/Of/C/S | none returned |
+| `site-issues` | path must start with an assigned project | file owner OR O/Of/C/S | none returned |
+| `cis-invoices` | path must start with an assigned project | file owner OR O/Of/C | none returned |
+
+## Audit classification (third evidence set, 7 October 2026)
+
+Evidence: anonymous probe plus read-only extracts supplied by the owner via the
+Supabase connector. No test users created; no live data modified.
+"PROVEN" below means proven from policy text; behaviour was not executed.
 
 ### PROVEN SAFE
 
-- Unauthenticated REST reads return 0 rows on all 33 app tables (RLS enabled).
-- Unauthenticated callers cannot list storage buckets or objects; `current_app_role` is not executable by `anon`.
-- All four app buckets (`cis-invoices`, `project-documents`, `site-issues`, `worker-receipts`) are private (`public = false`); no public-URL access.
-- `admin-create-user`: despite `verify_jwt = false`, source uses `withSupabase({ auth: "user" })`, calls `current_app_role()`, requires `owner`, then validates person/active/email/existing login before calling the admin API. Not an unauthenticated user-creation path.
-- `bootstrap-owner`: deployed source returns HTTP 410 "Bootstrap disabled" and performs no action. A self-registered user cannot become Owner through it.
-- `resinspec-mcp`: wrapped in `withOAuthProtectedResource()` + `withSupabase({ auth: "user" })`; database calls run in the caller's RLS context. Not a service-role bypass (individual tool effects remain bounded by RLS, see below).
-- Commercial isolation at the database: `project_commercials` require `private.can_view_commercial()`; `estimates` and `invoices` require commercial visibility **and** project access; `people_commercials` limited to Owner/Commercial.
-- Project scoping exists at the database: `projects` SELECT uses `private.can_access_project(id)`; `documents`, `prestart_releases`, `project_assignments` and RAMS acknowledgements are project/user scoped.
-- `prestart_releases` INSERT/UPDATE is restricted to Owner or Supervisor (Installer/Office/Commercial cannot write releases directly).
+Anonymous / platform:
+- Unauthenticated REST reads return 0 rows on all 33 app tables; buckets/objects not listable; `current_app_role` not executable by `anon`.
+- All four buckets private.
+- `admin-create-user` enforces authenticated user + `owner` internally (despite `verify_jwt = false`).
+- `bootstrap-owner` disabled (HTTP 410, no action).
+- `resinspec-mcp` is OAuth-protected and runs in the caller's RLS context (tool reach = caller's RLS rights).
 
-Caveat: these rest on policy text as supplied. The helper bodies
-(`private.can_access_project`, `private.can_view_commercial`) have not yet been
-reviewed, so "project scoped" is only as strong as those functions.
+RLS:
+- Installers cannot update their own `worker_expenses` or `subcontractor_invoices` after submission; Supervisors cannot update expenses.
+- Expenses / CIS invoices can only be inserted as oneself; Installers see only their own rows.
+- `user_notifications`: users read and update only their own rows; the update cannot reassign `user_id`.
+- Commercial isolation: `project_commercials`, `estimates`, `invoices`, `variations` need commercial visibility; `people_commercials` O/C only; `quotes` O/Of/C.
+- `prestart_releases` writable only by Owner/Supervisor.
+- Draft/superseded controlled documents and unapproved RAMS are not readable by Installers (table and storage).
+- `technical_systems` writes Owner-only.
+- RAMS and document acknowledgements can only be created for oneself.
+- Storage uploads are bound to the project in the path; no UPDATE/DELETE route on `worker-receipts`, `site-issues`, `cis-invoices` objects for ordinary users (as supplied).
 
-### PROVEN VULNERABILITY / DESIGN GAP
+### PROVEN VULNERABILITY / DESIGN-INTEGRITY GAP
 
-1. **QA workflow not enforced by the database (architectural integrity gap → TASK #23).**
-   `qa_records` SELECT/INSERT/UPDATE policies are all `private.can_access_project(project_id)`.
-   RLS enforces none of: gate sequence, current status, completion-before-acceptance,
-   photo/reading/batch evidence, Owner/Supervisor-only acceptance, separation of
-   completer and reviewer, or immutability of accepted gates. Any user with project
-   access (including an Installer on an assigned job, and Office/Commercial on any
-   job) can, via the API, set a gate to `accepted`, re-open an accepted gate, or
-   insert extra gate rows. The client QA/handover report would reflect the result.
-   (Only a trigger could still block this; none has been shown. Trigger list pending.)
-2. **People tax/identity fields exposed by row-level design (privacy gap).**
-   `people` SELECT allows Owner, Office, Commercial, Supervisor or the person
-   themselves; `ni_number`, `utr`, `cis_*`, `status_outcome` live on the same row
-   and `authenticated` holds grants on those columns. Office, Commercial and
-   Supervisor can read every person's NI number/UTR via the API regardless of UI.
-   Remediation later: column revoke, restricted table, or security-barrier view.
-3. **Public email sign-up enabled** (`disable_signup: false`; not yet confirmed changed).
-   Impact is reduced (bootstrap disabled, admin-create-user Owner-gated) but a
-   self-registered user still holds an authenticated session; their reach depends
-   on helper functions and any `authenticated`-wide policies (pending).
-4. **Leaked Password Protection disabled** (security advisor).
-5. **Database not reproducible from the repository.** Live migrations
-   (20261006214338 … 20261007163932) are absent from the repo; foundation
-   schema, policies, helper functions, storage policies and Edge Function source
-   are not in source control.
+1. **QA workflow not encoded in RLS (→ TASK #23).** `qa_records` INSERT/UPDATE = any project-access user. RLS does not enforce sequence, status transitions, completion-before-acceptance, evidence, Owner/Supervisor-only acceptance, completer ≠ reviewer, or immutability of accepted gates. Trigger evidence still outstanding, so whether anything below RLS compensates is not yet known.
+2. **QA evidence tables open to any project-access user.** `site_readings`, `batch_logs`, `snags` INSERT/UPDATE = access. Readings and batch records that satisfy Gates 4 and 6 can be edited after the fact. An Installer can set a snag to `accepted` directly, defeating the Gate 8 "all snags accepted" check (the app reserves acceptance for O/Of/C/S).
+3. **Handover state machine not encoded.** O/Of/C/S can write any `handover_records` status (e.g. `issued`/`accepted`) directly regardless of QA state.
+4. **Expense / CIS status transitions not encoded in RLS.** Management UPDATE does not restrict `pending → paid`, `rejected → paid`, editing after payment, or amount changes (trigger/constraint evidence outstanding).
+5. **People tax/identity fields readable by Office, Commercial, Supervisor.** `ni_number`, `utr`, `cis_*`, `status_outcome` on the same row as a SELECT policy covering O/Of/C/S, with authenticated column grants (pending: any view/column mechanism that narrows this).
+6. **Cross-project storage reads for Supervisor (as supplied).** `worker-receipts` and `site-issues` read policies grant O/Of/C/S with no project condition, unlike the matching tables (`worker_expenses`, `site_issues`), which require project access. A Supervisor can read (and, via the same SELECT policy, list) receipt and issue photos for jobs they are not assigned to. Receipts can contain personal data. Confirm against the literal policy text.
+7. **Public email sign-up enabled** (`disable_signup: false`, last checked 7 Oct, not confirmed changed). Self-registered users hold an authenticated session. Notably, the `technical_systems` SELECT branch "system is approved" carries no role condition as supplied, so a self-registered user with no ResinSpec role would be able to read all approved system data (mixing, coverage, limits). Exact exposure depends on the policy's `TO` role and on helper behaviour for role-less users.
+8. **Leaked Password Protection disabled** (security advisor).
+9. **Database not reproducible from the repository** (live migrations, foundation schema, policies, helpers, storage policies and Edge Function source absent).
+
+### Application ↔ database mismatches (functional, not security)
+
+- Handover / snag acceptance: RLS allows Office and Commercial, but the server actions require `qa:complete`, which they lack (UI shows the controls; submission silently redirects).
+- `subcontractor_invoices` UPDATE allows Commercial; the app grants `invoices:review` to Office but not Commercial.
+- `user_notifications` INSERT allows Commercial; harmless, but Office/Commercial can send any user a notification with an arbitrary `href` (rendered as a link on Alerts). Low risk; consider constraining `href` to relative paths later.
+- Storage uploads to `worker-receipts` / `site-issues` / `cis-invoices` require the user to be **assigned** to the project. Owners and Office (who have `expenses:submit` / review roles but are not usually assigned) may be unable to upload there; depends on the assignment helper.
 
 ### UNVERIFIED
 
-- Bodies of `private.can_access_project`, `private.can_view_commercial`, `current_app_role` and any other `private.*` helpers (assignment logic, use of `starts_on`/`ends_on`, behaviour for users with no role, `SECURITY DEFINER` / `search_path`).
-- Behaviour for an authenticated user with **no** ResinSpec role (depends on helpers above and any `TO authenticated USING (true)` policies, e.g. on `technical_systems`, `profiles`, `clients`, `sites`).
-- `qa_records` DELETE policy and any QA triggers (whether gates can be deleted; whether any trigger offsets gap 1).
-- `prestart_releases`: whether a Supervisor can write a `released` row whose checks do not pass (no DB validation shown), and whether a trigger exists.
-- `worker_expenses` and `subcontractor_invoices`: UPDATE policies (can a submitter change their own status/amount, mark `paid`, or edit after approval? can reviewers set `paid` from `pending`/`rejected`?); per-user SELECT isolation for Installers.
-- `site_issues`, `snags`, `handover_records`, `variations`, `site_readings`, `batch_logs` policies (who can update status / accept).
-- `user_notifications`: SELECT limited to own user? INSERT allowed for whom (needed for cross-user CIS notifications, but must not allow arbitrary spoofed notifications)?
-- `set_user_role`, `get_user_role`, `approve_technical_system`: Owner enforcement inside the functions and EXECUTE grants.
-- Database triggers backing roll-ups (variations/invoices → `project_commercials`), quote acceptance → Won/budget, estimate totals, audit events; and whether `project_commercials` manual UPDATE can overwrite roll-ups.
-- `storage.objects` policies for the four buckets: cross-project reads, other users' receipts/invoices/issue photos, Installer access to draft documents, upload path enforcement, update/delete rights.
-- `resinspec-mcp` tool list and the OAuth client/scopes registered (effective reach equals the user's RLS rights).
-- `people` column grants/views: whether any mechanism (column revoke, view) narrows gap 2.
-- Current Auth sign-up setting.
+- Bodies and security properties (`SECURITY DEFINER`, `search_path`, behaviour for role-less users, use of assignment dates) of `can_access_project`, `can_manage_project`, `can_view_commercial`, `has_role`, `storage_project_id`, `current_app_role`, `get_user_role`, `set_user_role`, `approve_technical_system`.
+- EXECUTE grants on those functions (can `authenticated` call `set_user_role` / `approve_technical_system` and are they Owner-gated inside?).
+- Triggers and trigger functions (QA, prestart, handover, expense/CIS status, roll-ups, quote acceptance, audit, any on `auth.users`).
+- Constraints: QA uniqueness per (project, gate) and status values; expense/CIS/quote/invoice/variation status checks.
+- `people`: any view or column revoke over sensitive fields.
+- `documents` INSERT/UPDATE `WITH CHECK` detail: can an Installer insert or update a document row directly with status `approved`?
+- `profiles` UPDATE: whether `profiles` carries any authority-bearing column a user could self-edit.
+- `project_commercials`, `estimates`, `invoices` write policies and whether manual UPDATE can overwrite roll-ups.
+- Current Auth sign-up setting; `resinspec-mcp` OAuth clients/scopes.
+- Rebuild evidence (full migration history with statements / schema dump).
 
 ## Files
 
@@ -153,14 +189,15 @@ From `scripts/probe-anon-boundary.sh`, run 7 October 2026:
 
 ## Evidence still required to close TASK #21
 
-1. Definitions of `private.can_access_project`, `private.can_view_commercial`, `current_app_role` and every other `private.*` / `public.*` function, with `SECURITY DEFINER` flag, `search_path` and EXECUTE grants (catalog sections 9–10). Specifically `set_user_role`, `get_user_role`, `approve_technical_system`.
-2. Full `pg_policies` output for every `public` table not already supplied, including DELETE policies and `WITH CHECK` clauses: `qa_records` (DELETE), `worker_expenses`, `subcontractor_invoices`, `user_notifications`, `site_issues`, `snags`, `handover_records`, `variations`, `site_readings`, `batch_logs`, `technical_systems`, `profiles`, `clients`, `sites`, `quotes`, `surveys`, `rams_*`, `document_acknowledgements`, `audit_events`, `project_actions`.
-3. `storage.objects` policies for the four buckets (catalog section 6, schema `storage`).
-4. Trigger list and trigger function bodies (section 11), including any on `auth.users`, `qa_records`, `prestart_releases`, `variations`, `invoices`, `quotes`.
-5. Column-level grants on `people` and any views over it (sections 8, 12).
-6. Check/unique constraints on status columns and QA gates (section 3).
-7. Auth: current `disable_signup` value; registered OAuth clients and scopes for `resinspec-mcp`.
-8. For rebuildability: full migration list with statements (or schema-only dump) and confirmation of whether pre-6-October foundation objects are in migration history.
+1. Definitions and security properties (`SECURITY DEFINER`, `search_path`, owner) of `private.can_access_project`, `private.can_manage_project`, `private.can_view_commercial`, `private.has_role`, `private.storage_project_id`, `current_app_role`, `get_user_role`, `set_user_role`, `approve_technical_system`, including how they treat an authenticated user with no role.
+2. EXECUTE grants on all of the above (to `anon`, `authenticated`, `public`).
+3. Trigger list and trigger-function definitions (all `public` tables plus `auth.users`).
+4. Constraints: QA uniqueness / status values; `worker_expenses`, `subcontractor_invoices`, `quotes`, `invoices`, `variations`, `handover_records`, `snags` status checks.
+5. Views over `people` and column grants confirming (or narrowing) sensitive-column exposure.
+6. Literal `storage.objects` read-policy text for `worker-receipts` and `site-issues` (to confirm or clear gap 6), plus the `technical_systems` SELECT policy's `TO` role (gap 7).
+7. `documents` INSERT/UPDATE `WITH CHECK` clauses; `profiles` columns; `project_commercials` / `estimates` / `invoices` write policies.
+8. Current Auth `disable_signup` value.
+9. Rebuild evidence: full migration list with statements (or schema-only dump), and whether pre-6-October foundation objects are in migration history.
 
 ## Still to verify once the baseline exists
 
