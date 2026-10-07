@@ -3879,3 +3879,15 @@ button:disabled {
  .mobile-admin-logo{width:128px;height:auto}
  .mobile-admin-label{margin-left:0;font-size:7px;writing-mode:vertical-rl;letter-spacing:.12em}
 }
+
+/* Mobile visual tidy: compact header and empty dashboard states. */
+@media(max-width:720px){
+ .mobile-brand{align-items:flex-start;flex-direction:column;gap:1px}
+ .mobile-admin-logo{width:136px}
+ .mobile-admin-label{margin:0 0 0 36px;font-size:7px;line-height:1;writing-mode:horizontal-tb;letter-spacing:.18em}
+ .main-content{padding-top:18px}
+ .page-heading{margin-bottom:14px}
+ .page-heading>div>p:last-child{margin-top:5px}
+ .empty-state{min-height:0;padding:22px 16px}
+ .empty-state.compact-empty{padding:16px}
+}
