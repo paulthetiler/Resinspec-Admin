@@ -91,6 +91,7 @@ export function PersonAccessControl({
           value={role}
           onChange={(event) => setRole(event.target.value as StaffRole)}
         >
+          <option value="subcontractor">Subcontractor — assigned jobs only</option>
           <option value="installer">Installer</option>
           <option value="supervisor">Supervisor</option>
           <option value="office">Office</option>
