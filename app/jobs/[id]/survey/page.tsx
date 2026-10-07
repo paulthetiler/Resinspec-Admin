@@ -36,7 +36,7 @@ export default async function SurveyPage({
   const [{ data: project }, { data: survey }, { data: photos }] = await Promise.all([
     supabase
       .from("projects")
-      .select("id, reference, title, area_m2, sites(name, town_city, postcode)")
+      .select("id, reference, title, area_m2, programme_start, programme_end, scope_summary, sites(name, town_city, postcode, access_notes, induction_notes, power_notes, water_notes, known_hazards)")
       .eq("id", id)
       .single(),
     supabase
@@ -98,6 +98,10 @@ export default async function SurveyPage({
   }
 
   const releaseStatus = survey?.release_status || "draft";
+  const officeAccess = [site?.access_notes, site?.induction_notes].filter(Boolean).join("\n");
+  const officePowerWater = [site?.power_notes ? `Power: ${site.power_notes}` : "", site?.water_notes ? `Water: ${site.water_notes}` : ""].filter(Boolean).join("\n");
+  const officeProgramme = [project.programme_start ? `Start: ${project.programme_start}` : "", project.programme_end ? `Finish: ${project.programme_end}` : ""].filter(Boolean).join(" · ");
+  const officeScope = project.scope_summary || "";
 
   if (!editable) {
     return (
@@ -338,7 +342,7 @@ export default async function SurveyPage({
             </p>
           ) : (
             <p className="qa-support-note">
-              Save the survey once before adding evidence photos.
+              Save the survey once to create the survey record. The Add photos button will appear here immediately afterwards.
             </p>
           )}
         </article>
@@ -516,11 +520,14 @@ export default async function SurveyPage({
           <div className="section-divider field-wide">
             <span>Site logistics</span>
           </div>
+          {(officeAccess || officePowerWater || officeProgramme) ? (
+            <div className="field-wide qa-support-note"><strong>Pre-filled from office / tender information.</strong> Confirm it on site and only change it if the actual conditions differ.</div>
+          ) : null}
 
           <QuickEntryField
             name="access_constraints"
             label="Access constraints"
-            defaultValue={survey?.access_constraints}
+            defaultValue={survey?.access_constraints || officeAccess}
             wide
             multi
             options={[
@@ -537,7 +544,7 @@ export default async function SurveyPage({
           <QuickEntryField
             name="power_and_water"
             label="Power / water"
-            defaultValue={survey?.power_and_water}
+            defaultValue={survey?.power_and_water || officePowerWater}
             rows={2}
             multi
             options={[
@@ -568,7 +575,7 @@ export default async function SurveyPage({
           <QuickEntryField
             name="programme_constraints"
             label="Programme constraints"
-            defaultValue={survey?.programme_constraints}
+            defaultValue={survey?.programme_constraints || officeProgramme}
             wide
             multi
             options={[
@@ -688,7 +695,7 @@ export default async function SurveyPage({
             <textarea
               name="client_requirements"
               rows={4}
-              defaultValue={survey?.client_requirements ?? ""}
+              defaultValue={survey?.client_requirements || officeScope}
             />
           </label>
         </div>

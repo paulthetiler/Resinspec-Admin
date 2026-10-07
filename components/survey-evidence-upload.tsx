@@ -111,11 +111,12 @@ export function SurveyEvidenceUpload({ projectId, surveyId }: Props) {
   return (
     <form className="survey-photo-upload" onSubmit={handleSubmit}>
       <label className="field">
-        <span>Survey photos</span>
+        <span>Add site photos</span>
         <input
           name="photos"
           type="file"
           accept="image/*"
+          capture="environment"
           multiple
           required
           disabled={busy}
@@ -125,7 +126,7 @@ export function SurveyEvidenceUpload({ projectId, surveyId }: Props) {
       {message ? <p className="upload-message">{message}</p> : null}
 
       <button className="secondary-button full-button" type="submit" disabled={busy}>
-        {busy ? "Uploading…" : "Add survey evidence"}
+        {busy ? "Uploading…" : "Add photos"}
       </button>
     </form>
   );
