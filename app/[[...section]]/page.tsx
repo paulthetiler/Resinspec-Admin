@@ -552,7 +552,7 @@ export default async function AdminPage({ params }: PageProps) {
 
   const { supabase, role, actualRole, previewRole } = await getAccessContext();
 
-  if (!role || !["owner", "office", "commercial", "supervisor", "installer"].includes(role)) {
+  if (!role || !["owner", "office", "commercial", "supervisor", "installer", "subcontractor"].includes(role)) {
     redirect("/unauthorised");
   }
 
