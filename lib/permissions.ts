@@ -27,6 +27,12 @@ export type Permission =
   | "commercial:view"
   | "commercial:edit"
   | "financials:view"
+  | "expenses:submit"
+  | "expenses:review"
+  | "issues:submit"
+  | "issues:review"
+  | "invoices:submit"
+  | "invoices:review"
   | "settings:manage";
 
 export const rolePermissions: Record<Role, Permission[]> = {
@@ -52,6 +58,12 @@ export const rolePermissions: Record<Role, Permission[]> = {
     "commercial:view",
     "commercial:edit",
     "financials:view",
+    "expenses:submit",
+    "expenses:review",
+    "issues:submit",
+    "issues:review",
+    "invoices:submit",
+    "invoices:review",
     "settings:manage",
   ],
   office: [
@@ -69,6 +81,9 @@ export const rolePermissions: Record<Role, Permission[]> = {
     "documents:edit",
     "qa:view",
     "people:view",
+    "expenses:review",
+    "issues:review",
+    "invoices:review",
   ],
   commercial: [
     "dashboard:view",
@@ -87,6 +102,8 @@ export const rolePermissions: Record<Role, Permission[]> = {
     "commercial:view",
     "commercial:edit",
     "financials:view",
+    "expenses:review",
+    "issues:review",
   ],
   supervisor: [
     "dashboard:view",
@@ -99,6 +116,9 @@ export const rolePermissions: Record<Role, Permission[]> = {
     "qa:view",
     "qa:complete",
     "people:view",
+    "expenses:submit",
+    "issues:submit",
+    "issues:review",
   ],
   installer: [
     "jobs:view_assigned",
@@ -107,6 +127,9 @@ export const rolePermissions: Record<Role, Permission[]> = {
     "documents:view",
     "qa:view",
     "qa:complete",
+    "expenses:submit",
+    "issues:submit",
+    "invoices:submit",
   ],
 };
 

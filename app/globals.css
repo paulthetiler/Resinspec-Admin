@@ -3769,3 +3769,16 @@ button:disabled {
     min-height:44px;
   }
 }
+
+/* Worker portal: expenses and site issue evidence */
+.expense-list { display:grid; gap:10px; }
+.expense-card { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; padding:14px; border:1px solid var(--light); border-radius:11px; background:#fbfcfc; }
+.expense-card > div:first-child { display:grid; gap:4px; min-width:0; }
+.expense-card span,.expense-card small { color:var(--muted); font-size:9px; }
+.expense-card strong { color:var(--slate); font-size:13px; }
+.expense-actions { display:flex; align-items:center; gap:9px; }
+.expense-review { grid-column:1/-1; display:grid; grid-template-columns:minmax(160px,1fr) auto auto auto; gap:7px; padding-top:10px; border-top:1px solid var(--light); }
+.expense-review input { min-height:40px; border:1px solid #d8e0e2; border-radius:8px; padding:8px 10px; background:white; }
+.form-grid input[type="file"] { width:100%; min-height:44px; padding:8px; border:1px solid #d8e0e2; border-radius:9px; background:#fbfcfc; }
+.form-grid label small { display:block; margin-top:5px; color:var(--muted); font-size:9px; line-height:1.4; }
+@media(max-width:720px){.expense-card{grid-template-columns:1fr}.expense-actions{justify-content:space-between}.expense-review{grid-template-columns:1fr}.expense-review .primary-button,.expense-review .secondary-button{min-height:44px;width:100%}}
