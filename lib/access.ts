@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { can, type Permission, type Role } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 
