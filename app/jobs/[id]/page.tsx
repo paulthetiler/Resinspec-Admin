@@ -16,7 +16,7 @@ export default async function JobPage({ params }: JobPageProps) {
     "jobs:view_assigned",
   ]);
 
-  const { data: project } = await supabase
+  const projectQuery = supabase
     .from("projects")
     .select(
       "id, reference, title, status, area_m2, programme_start, programme_end, scope_summary, next_action, next_action_due, clients(trading_name, legal_name), sites(name, address_line_1, address_line_2, town_city, postcode, access_notes, induction_notes, welfare_notes, power_notes, water_notes, waste_notes, known_hazards), technical_systems(code, name, manufacturer, revision, thickness, mixing_instructions, coverage_notes, pot_life_notes, cure_notes, application_limits, temperature_notes)"
@@ -24,45 +24,46 @@ export default async function JobPage({ params }: JobPageProps) {
     .eq("id", id)
     .single();
 
-  if (!project) {
-    notFound();
-  }
-
-  const workflow = await getSiteWorkflowState(supabase, id, role);
-
-  if (!workflow) {
-    notFound();
-  }
-
-  const [{ count: documentCount }, { count: qaCount }, { count: crewCount }] =
-    await Promise.all([
-      supabase
-        .from("documents")
-        .select("id", { count: "exact", head: true })
+  const commercialQuery = can(role, "commercial:view")
+    ? supabase
+        .from("project_commercials")
+        .select(
+          "order_value, estimated_direct_cost, risk_adjusted_cost, target_margin_pct, actual_direct_cost, variation_value, invoiced_value, paid_value"
+        )
         .eq("project_id", id)
-        .is("qa_record_id", null)
-        .is("survey_id", null),
-      supabase
-        .from("qa_records")
-        .select("id", { count: "exact", head: true })
-        .eq("project_id", id),
-      supabase
-        .from("project_assignments")
-        .select("id", { count: "exact", head: true })
-        .eq("project_id", id),
-    ]);
+        .maybeSingle()
+    : Promise.resolve({ data: null });
 
-  const commercial = can(role, "commercial:view")
-    ? (
-        await supabase
-          .from("project_commercials")
-          .select(
-            "order_value, estimated_direct_cost, risk_adjusted_cost, target_margin_pct, actual_direct_cost, variation_value, invoiced_value, paid_value"
-          )
-          .eq("project_id", id)
-          .maybeSingle()
-      ).data
-    : null;
+  const [
+    { data: project },
+    workflow,
+    { count: documentCount },
+    { count: qaCount },
+    { count: crewCount },
+    { data: commercial },
+  ] = await Promise.all([
+    projectQuery,
+    getSiteWorkflowState(supabase, id, role),
+    supabase
+      .from("documents")
+      .select("id", { count: "exact", head: true })
+      .eq("project_id", id)
+      .is("qa_record_id", null)
+      .is("survey_id", null),
+    supabase
+      .from("qa_records")
+      .select("id", { count: "exact", head: true })
+      .eq("project_id", id),
+    supabase
+      .from("project_assignments")
+      .select("id", { count: "exact", head: true })
+      .eq("project_id", id),
+    commercialQuery,
+  ]);
+
+  if (!project || !workflow) {
+    notFound();
+  }
 
   const client = Array.isArray(project.clients)
     ? project.clients[0]
