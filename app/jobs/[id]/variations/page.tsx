@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAnyPermission } from "@/lib/access";
-import { addVariation, decideVariation } from "./actions";
+import { raiseVariation, verifyVariation, priceVariation, sendToClient, recordClientDecision, releaseVariation } from "./actions";
 
 type VariationsPageProps = {
   params: Promise<{ id: string }>;
@@ -23,7 +23,7 @@ export default async function VariationsPage({
 }: VariationsPageProps) {
   const { id } = await params;
   const { error } = await searchParams;
-  const { supabase } = await requireAnyPermission(["commercial:view"]);
+  const { supabase, role } = await requireAnyPermission(["jobs:view_all", "jobs:view_assigned"]);
 
   const [{ data: project }, { data: variations }] = await Promise.all([
     supabase
@@ -123,35 +123,7 @@ export default async function VariationsPage({
                     </span>
                   </div>
 
-                  {!["approved", "rejected", "withdrawn"].includes(variation.status) ? (
-                    <div className="variation-actions">
-                      <form action={decideVariation} className="inline-actions">
-                        <input type="hidden" name="project_id" value={id} />
-                        <input type="hidden" name="variation_id" value={variation.id} />
-                        <input type="hidden" name="decision" value="approved" />
-                        <input
-                          className="mini-input"
-                          name="approved_value"
-                          type="number"
-                          step="0.01"
-                          placeholder="Approved £"
-                          defaultValue={variation.submitted_value ?? ""}
-                        />
-                        <button className="text-button" type="submit">
-                          Approve
-                        </button>
-                      </form>
-
-                      <form action={decideVariation}>
-                        <input type="hidden" name="project_id" value={id} />
-                        <input type="hidden" name="variation_id" value={variation.id} />
-                        <input type="hidden" name="decision" value="rejected" />
-                        <button className="text-button danger-text" type="submit">
-                          Reject
-                        </button>
-                      </form>
-                    </div>
-                  ) : null}
+                  {role === "supervisor" && ["site_submitted","proceed_at_risk"].includes(variation.status) ? (<form action={verifyVariation}><input type="hidden" name="project_id" value={id} /><input type="hidden" name="variation_id" value={variation.id} /><button className="text-button" type="submit">Technical facts verified</button></form>) : null}
                 </article>
               ))}
             </div>
@@ -167,53 +139,39 @@ export default async function VariationsPage({
           <div className="panel-head">
             <div>
               <p className="eyebrow">New change</p>
-              <h2>Add variation</h2>
+              <h2>Submit to office</h2>
             </div>
           </div>
 
-          <form action={addVariation} className="compact-form">
+          <form action={raiseVariation} className="compact-form">
             <input type="hidden" name="project_id" value={id} />
 
-            <div className="form-grid">
-              <label className="field">
-                <span>Reference *</span>
-                <input name="reference" required placeholder="V01" />
-              </label>
-              <label className="field">
-                <span>Status</span>
-                <select name="status" defaultValue="draft">
-                  <option value="draft">Draft</option>
-                  <option value="submitted">Submitted</option>
-                </select>
-              </label>
-            </div>
-
             <label className="field">
-              <span>Title *</span>
+              <span>What changed? *</span>
               <input name="title" required />
             </label>
 
             <label className="field">
-              <span>Description</span>
+              <span>Additional / omitted work</span>
               <textarea name="description" rows={4} />
             </label>
 
             <div className="form-grid">
               <label className="field">
-                <span>Submitted value £</span>
-                <input name="submitted_value" type="number" step="0.01" />
+                <span>Who instructed it?</span>
+                <input name="requested_by_name" />
               </label>
               <label className="field">
-                <span>Estimated cost impact £</span>
-                <input name="estimated_cost_impact" type="number" step="0.01" />
+                <span>Company</span>
+                <input name="requested_by_company" />
               </label>
               <label className="field">
                 <span>Programme impact days</span>
                 <input name="programme_impact_days" type="number" step="1" />
               </label>
               <label className="field">
-                <span>Client reference</span>
-                <input name="client_reference" />
+                <span>Likely extra labour days</span>
+                <input name="site_labour_days" type="number" step="0.5" />
               </label>
             </div>
 
