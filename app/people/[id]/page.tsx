@@ -3,10 +3,11 @@ import { notFound } from "next/navigation";
 import { requireAnyPermission } from "@/lib/access";
 import { can } from "@/lib/permissions";
 import { PersonAccessControl } from "@/components/person-access-control";
+import { issueSubcontractorAgreement } from "./agreement-actions";
 
 type PersonPageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ updated?: string; commercial_error?: string }>;
+  searchParams: Promise<{ updated?: string; commercial_error?: string; agreement_token?: string; agreement_error?: string }>;
 };
 
 function dateText(value: string | null) {
@@ -20,7 +21,7 @@ export default async function PersonPage({
   searchParams,
 }: PersonPageProps) {
   const { id } = await params;
-  const { updated, commercial_error } = await searchParams;
+  const { updated, commercial_error, agreement_token, agreement_error } = await searchParams;
   const { supabase, role } = await requireAnyPermission(["people:view"]);
 
   const { data: person } = await supabase
@@ -40,6 +41,8 @@ export default async function PersonPage({
           .maybeSingle()
       ).data
     : null;
+
+  const { data: latestAgreement } = await supabase.from("subcontractor_agreements").select("version,status,sent_at,signed_at,signer_name,token").eq("person_id",id).order("created_at",{ascending:false}).limit(1).maybeSingle();
 
   const currentAccessRole =
     role === "owner" && person.user_id
@@ -173,6 +176,15 @@ export default async function PersonPage({
         </section>
       </div>
 
+
+      {person.engagement_type === "subcontractor" && can(role, "people:manage") ? (
+        <section className="panel"><div className="panel-head"><div><p className="eyebrow">Electronic agreement</p><h2>Subcontractor terms</h2></div></div>
+        {agreement_error?<p className="form-error">{agreement_error}</p>:null}
+        <p>{latestAgreement ? `Version ${latestAgreement.version} · ${latestAgreement.status}${latestAgreement.signer_name?` · signed by ${latestAgreement.signer_name}`:""}` : "No agreement issued yet."}</p>
+        {agreement_token?<p><strong>Signing link ready:</strong> <a href={`/sign/subcontractor/${agreement_token}`}>{`/sign/subcontractor/${agreement_token}`}</a></p>:null}
+        <form action={issueSubcontractorAgreement}><input type="hidden" name="person_id" value={id}/><button className="primary-button" type="submit">{latestAgreement?.status==="signed"?"Issue new version":"Create signing link"}</button></form>
+        </section>
+      ):null}
 
       {person.engagement_type === "subcontractor" ? (
         <section className="panel">
