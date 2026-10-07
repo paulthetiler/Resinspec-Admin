@@ -1,0 +1,10 @@
+import { notFound } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+
+export default async function SignAgreementPage({params,searchParams}:{params:Promise<{token:string}>,searchParams:Promise<{signed?:string;error?:string}>}) {
+ const {token}=await params; const qs=await searchParams; const supabase=await createClient();
+ const {data}=await supabase.rpc("get_subcontractor_agreement",{signing_token:token});
+ const agreement=data?.[0]; if(!agreement) notFound();
+ if(agreement.status==="signed"||qs.signed) return <div className="standalone-page narrow-page"><section className="panel"><p className="eyebrow">ResinSpec Flooring</p><h1>Agreement signed</h1><p>Thanks {agreement.signer_name||agreement.person_name}. Your signed version {agreement.version} has been recorded.</p></section></div>;
+ return <div className="standalone-page narrow-page"><section className="page-heading"><div><p className="eyebrow">ResinSpec Flooring</p><h1>Subcontractor Agreement</h1><p>{agreement.person_name} · Version {agreement.version}</p></div></section><section className="panel"><div style={{whiteSpace:"pre-wrap"}}>{agreement.agreement_text}</div></section><form action="/sign/subcontractor/submit" method="post" className="form-card"><input type="hidden" name="token" value={token}/>{qs.error?<p className="form-error">{qs.error}</p>:null}<label className="field"><span>Full name *</span><input name="signer_name" required/></label><label className="field"><span>Email</span><input name="signer_email" type="email"/></label><label className="field"><span>Electronic signature *</span><input name="signature_text" required placeholder="Type your full name"/></label><label className="check-row"><input name="accepted" type="checkbox" required/><span>I have read version {agreement.version}, agree to its terms and intend this electronic signature to authenticate my acceptance.</span></label><button className="primary-button" type="submit">Sign agreement</button></form></div>;
+}
