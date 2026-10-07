@@ -2,16 +2,18 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { MobileMenu } from "@/components/mobile-menu";
 import { can, type Role } from "@/lib/permissions";
+import { startRolePreview, stopRolePreview } from "@/app/view-as/actions";
 import { canAccessNav, navigation } from "@/lib/navigation";
 
-type AdminShellProps={activeSlug:string;role:Role;children:ReactNode};
+type AdminShellProps={activeSlug:string;role:Role;actualRole?:Role|null;previewRole?:Role|null;children:ReactNode};
 const roleLabels:Record<Role,string>={owner:"Owner",office:"Project Manager",commercial:"Commercial Manager",supervisor:"Supervisor",installer:"Installer",subcontractor:"Subcontractor"};
 
-export function AdminShell({activeSlug,role,children}:AdminShellProps){
+export function AdminShell({activeSlug,role,actualRole,previewRole,children}:AdminShellProps){
  const visibleNavigation=navigation.filter(item=>canAccessNav(role,item));
  const moreHref=visibleNavigation.find(item=>!["","jobs"].includes(item.slug))?.slug;
  const canCreate=can(role,"jobs:edit");
  return <div className="app-shell">
+  {actualRole==="owner" ? <div className={previewRole?"view-as-bar is-active":"view-as-bar"}>{previewRole?<><strong>PREVIEWING AS: {roleLabels[previewRole].toUpperCase()}</strong><span>Read the app as this role. Exit preview before doing owner work.</span><form action={stopRolePreview}><button type="submit">Exit preview</button></form></>:<form action={startRolePreview}><strong>View app as</strong><select name="role" defaultValue="subcontractor"><option value="subcontractor">Subcontractor</option><option value="installer">Installer</option><option value="supervisor">Supervisor</option><option value="office">Project Manager</option><option value="commercial">Commercial Manager</option></select><button type="submit">Preview</button></form>}</div>:null}
   <aside className="sidebar">
    <div className="brand-block"><Link className="brand" href="/" aria-label="ResinSpec Admin home"><img className="admin-logo" src="/resinspec-logo.svg" alt="ResinSpec Flooring" /><span className="admin-label">ADMIN</span></Link><p>Operations system</p></div>
    <nav className="side-nav" aria-label="Admin navigation">{visibleNavigation.map(item=>{const href=item.slug?`/${item.slug}`:"/";return <Link key={item.slug||"today"} href={href} className={item.slug===activeSlug?"nav-item is-active":"nav-item"}><span className="nav-dot"/><span>{item.label}</span></Link>})}</nav>
