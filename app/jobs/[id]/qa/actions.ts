@@ -10,6 +10,7 @@ import {
   sortQaRecords,
 } from "@/lib/qa-gates";
 import { getPrestartState } from "@/lib/prestart";
+import { qaProgressionBlockReason } from "@/lib/prestart-state";
 
 function optionalText(value: FormDataEntryValue | null) {
   const text = String(value ?? "").trim();
@@ -78,6 +79,25 @@ async function assertPreviousGatesReleased(
       );
     }
   }
+}
+
+// No gate may be completed or released unless the job has a current pre-start
+// release. Completed QA is never altered; a stale or withdrawn release simply
+// holds further progression until a new release is issued.
+async function assertPrestartCurrent(
+  supabase: Awaited<ReturnType<typeof requireAnyPermission>>["supabase"],
+  projectId: string,
+  gateOrder: number | null
+) {
+  const prestart = await getPrestartState(supabase, projectId);
+  const reason = prestart
+    ? qaProgressionBlockReason({
+        state: prestart.releaseState,
+        changes: prestart.changes,
+        gateOrder,
+      })
+    : "Project not found";
+  if (reason) qaError(projectId, reason);
 }
 
 async function assertGateEvidence(
@@ -229,16 +249,7 @@ export async function completeQaRecord(formData: FormData) {
 
   await assertPreviousGatesReleased(supabase, projectId, record.hold_point);
 
-  if (gate?.code === "substrate") {
-    const prestart = await getPrestartState(supabase, projectId);
-
-    if (!prestart?.releaseCurrent) {
-      qaError(
-        projectId,
-        "Gate 1 is locked until the current job inputs have a valid Pre-start release"
-      );
-    }
-  }
+  await assertPrestartCurrent(supabase, projectId, gate?.order ?? null);
 
   await assertGateEvidence(supabase, projectId, record.hold_point, recordId);
 
@@ -286,6 +297,10 @@ export async function reviewQaRecord(formData: FormData) {
   const gate = getQaGateByLabel(record.hold_point);
 
   await assertPreviousGatesReleased(supabase, projectId, record.hold_point);
+
+  if (decision === "accepted" || decision === "not_applicable") {
+    await assertPrestartCurrent(supabase, projectId, gate?.order ?? null);
+  }
 
   if (decision === "accepted") {
     if (record.status !== "complete") {

@@ -1,4 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  derivePrestartState,
+  type PrestartReleaseRow,
+  type PrestartSnapshot,
+} from "@/lib/prestart-state";
+import { QA_GATES, isQaReleased } from "@/lib/qa-gates";
 
 export type PrestartCheckCode =
   | "authorised"
@@ -16,36 +22,9 @@ export type PrestartCheck = {
   detail: string;
 };
 
-type PrestartSnapshot = {
-  survey_id: string | null;
-  survey_updated_at: string | null;
-  system_id: string | null;
-  system_updated_at: string | null;
-  rams_id: string | null;
-  rams_updated_at: string | null;
-  site_id: string | null;
-  site_updated_at: string | null;
-  programme_start: string | null;
-  programme_end: string | null;
-  area_m2: number | string | null;
-  scope_summary: string | null;
-  crew_count: number;
-  crew_fingerprint: string;
-};
-
 function firstRelation<T>(value: T | T[] | null | undefined): T | null {
   if (Array.isArray(value)) return value[0] ?? null;
   return value ?? null;
-}
-
-function sameNumber(
-  left: number | string | null | undefined,
-  right: number | string | null | undefined
-) {
-  if (left === null || left === undefined || right === null || right === undefined) {
-    return left == null && right == null;
-  }
-  return Number(left) === Number(right);
 }
 
 export async function getPrestartState(
@@ -57,7 +36,9 @@ export async function getPrestartState(
     { data: survey, error: surveyError },
     { data: ramsRows, error: ramsError },
     { data: crewRows, error: crewError },
-    { data: release, error: releaseError },
+    { data: releaseRows, error: releaseError },
+    { data: inputs, error: inputsError },
+    { data: qaRows, error: qaError },
   ] = await Promise.all([
     supabase
       .from("projects")
@@ -86,9 +67,16 @@ export async function getPrestartState(
       .order("id", { ascending: true }),
     supabase
       .from("prestart_releases")
-      .select("*")
+      .select(
+        "id, project_id, status, snapshot, release_note, released_by, released_at, superseded_at, superseded_by, withdrawn_at, withdrawn_by, withdrawn_reason"
+      )
       .eq("project_id", projectId)
-      .maybeSingle(),
+      .order("released_at", { ascending: false, nullsFirst: false }),
+    supabase.rpc("prestart_current_inputs", { p_project_id: projectId }),
+    supabase
+      .from("qa_records")
+      .select("hold_point, status")
+      .eq("project_id", projectId),
   ]);
 
   if (projectError) throw projectError;
@@ -96,22 +84,14 @@ export async function getPrestartState(
   if (ramsError) throw ramsError;
   if (crewError) throw crewError;
   if (releaseError) throw releaseError;
+  if (inputsError) throw inputsError;
+  if (qaError) throw qaError;
   if (!project) return null;
 
   const site = firstRelation(project.sites);
   const system = firstRelation(project.technical_systems);
   const latestRams = ramsRows?.[0] ?? null;
   const assignedCrew = crewRows?.length ?? 0;
-  const crewFingerprint = JSON.stringify(
-    (crewRows || []).map((row) => ({
-      id: row.id,
-      user_id: row.user_id,
-      person_id: row.person_id,
-      assignment_role: row.assignment_role,
-      starts_on: row.starts_on,
-      ends_on: row.ends_on,
-    }))
-  );
 
   const authorisedStatuses = new Set([
     "won",
@@ -210,41 +190,22 @@ export async function getPrestartState(
     },
   ];
 
-  const snapshot: PrestartSnapshot = {
-    survey_id: survey?.id ?? null,
-    survey_updated_at: survey?.updated_at ?? null,
-    system_id: project.system_id ?? null,
-    system_updated_at: system?.updated_at ?? null,
-    rams_id: latestRams?.id ?? null,
-    rams_updated_at: latestRams?.updated_at ?? null,
-    site_id: project.site_id ?? null,
-    site_updated_at: site?.updated_at ?? null,
-    programme_start: project.programme_start ?? null,
-    programme_end: project.programme_end ?? null,
-    area_m2: project.area_m2 ?? null,
-    scope_summary: project.scope_summary ?? null,
-    crew_count: assignedCrew,
-    crew_fingerprint: crewFingerprint,
+  const releases = (releaseRows || []) as PrestartReleaseRow[];
+  const currentInputs = (inputs || {}) as {
+    snapshot?: PrestartSnapshot | null;
+    blockers?: string[];
   };
-
-  const releaseCurrent = Boolean(
-    release &&
-      release.status === "released" &&
-      release.survey_id === snapshot.survey_id &&
-      release.survey_updated_at === snapshot.survey_updated_at &&
-      release.system_id === snapshot.system_id &&
-      release.system_updated_at === snapshot.system_updated_at &&
-      release.rams_id === snapshot.rams_id &&
-      release.rams_updated_at === snapshot.rams_updated_at &&
-      release.site_id === snapshot.site_id &&
-      release.site_updated_at === snapshot.site_updated_at &&
-      release.programme_start === snapshot.programme_start &&
-      release.programme_end === snapshot.programme_end &&
-      sameNumber(release.area_m2, snapshot.area_m2) &&
-      (release.scope_summary ?? null) === snapshot.scope_summary &&
-      Number(release.crew_count) === snapshot.crew_count &&
-      (release.crew_fingerprint ?? "") === snapshot.crew_fingerprint
-  );
+  const derived = derivePrestartState({
+    releases,
+    currentSnapshot: currentInputs.snapshot ?? null,
+    qaStatuses: (qaRows || []).map((row) => String(row.status)),
+    projectStatus: project.status,
+    qaComplete: QA_GATES.every((gate) =>
+      (qaRows || []).some(
+        (row) => row.hold_point === gate.label && isQaReleased(String(row.status))
+      )
+    ),
+  });
 
   return {
     project,
@@ -252,12 +213,19 @@ export async function getPrestartState(
     survey,
     system,
     latestRams,
-    release,
+    /** Active release, or the most recent one when none is active. */
+    release: derived.active ?? derived.latest,
+    releases,
     crewCount: assignedCrew,
     checks,
     allPass: checks.every((check) => check.pass),
-    snapshot,
-    releaseCurrent,
-    releaseStale: Boolean(release?.status === "released" && !releaseCurrent),
+    /** Readiness codes the database will refuse a release for. */
+    databaseBlockers: currentInputs.blockers ?? [],
+    releaseState: derived.state,
+    releaseCurrent: derived.releaseCurrent,
+    releaseStale: derived.releaseStale,
+    changes: derived.changes,
+    liveWork: derived.liveWork,
+    onHold: derived.onHold,
   };
 }

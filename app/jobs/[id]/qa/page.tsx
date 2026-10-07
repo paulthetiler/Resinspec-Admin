@@ -234,6 +234,18 @@ export default async function QaPage({
             View pre-start
           </Link>
         </div>
+      ) : prestart?.onHold ? (
+        <div className="prestart-stale-note qa-prestart-note">
+          <strong>QA is on hold.</strong>{" "}
+          {prestart.releaseStale
+            ? `Pre-start inputs changed after release (${prestart.changes.join(", ")}).`
+            : "The pre-start release was withdrawn."}{" "}
+          Completed gates are kept; no further gate can be completed or released
+          until a new pre-start release is issued.
+          <Link className="text-button" href={`/jobs/${id}/prestart`}>
+            Open pre-start
+          </Link>
+        </div>
       ) : (
         <div className="prestart-stale-note qa-prestart-note">
           <strong>Gate 1 is locked.</strong>{" "}

@@ -2763,9 +2763,25 @@ button:disabled { opacity:.48; cursor:not-allowed; }
   color:#81651f;
 }
 
-.prestart-blocked {
+.prestart-blocked,
+.prestart-on-hold {
   background:#fff0f0;
   color:#944646;
+}
+
+.prestart-withdrawn,
+.prestart-not-released {
+  background:#f2f4f5;
+  color:#5c6a71;
+}
+
+.prestart-stale-note ul {
+  margin:6px 0;
+  padding-left:18px;
+}
+
+.prestart-stale-note p {
+  margin:6px 0 0;
 }
 
 .prestart-stale-note {

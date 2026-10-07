@@ -28,7 +28,7 @@ export type SiteWorkflowItem = {
 };
 
 export type SiteWorkflowState = {
-  phase: "prestart" | "installation" | "handover" | "complete";
+  phase: "prestart" | "hold" | "installation" | "handover" | "complete";
   phaseLabel: string;
   nextAction: {
     eyebrow: string;
@@ -185,38 +185,50 @@ export async function getSiteWorkflowState(
       label: "Pre-start",
       status: prestart.releaseCurrent
         ? "Released"
-        : prestart.releaseStale
-          ? "Re-release required"
-          : prestart.allPass
-            ? "Ready to release"
-            : "Blocked",
+        : prestart.onHold
+          ? "On hold"
+          : prestart.releaseStale
+            ? "Re-release required"
+            : prestart.releaseState === "withdrawn"
+              ? "Withdrawn"
+              : prestart.allPass
+                ? "Ready to release"
+                : "Blocked",
       detail: prestart.releaseCurrent
         ? "Start-work gate released."
         : prestart.releaseStale
-          ? "A controlled job input changed after release."
+          ? `Changed since release: ${prestart.changes.join(", ")}.`
+          : prestart.releaseState === "withdrawn"
+            ? "Release withdrawn; a new release is required."
           : prestart.allPass
             ? "All readiness checks pass."
             : `${prestart.checks.filter((check) => !check.pass).length} readiness check${prestart.checks.filter((check) => !check.pass).length === 1 ? "" : "s"} still blocking release.`,
       href: route(projectId, "/prestart"),
       tone: prestart.releaseCurrent
         ? "complete"
-        : prestart.allPass || prestart.releaseStale
-          ? "current"
-          : "blocked",
+        : prestart.onHold
+          ? "blocked"
+          : prestart.allPass || prestart.releaseStale
+            ? "current"
+            : "blocked",
     },
     {
       code: "qa",
       label: "Installation QA",
       status: allQaReleased
         ? "Complete"
-        : !prestart.releaseCurrent
+        : prestart.onHold
+          ? "On hold"
+          : !prestart.releaseCurrent
           ? "Locked"
           : currentGate
             ? `Gate ${currentGate.order} of ${qaTotal}`
             : "Ready",
       detail: allQaReleased
         ? "All installation gates released."
-        : !prestart.releaseCurrent
+        : prestart.onHold
+          ? "Completed gates kept; progression paused until pre-start is re-released."
+          : !prestart.releaseCurrent
           ? "Pre-start must be released first."
           : currentGate
             ? currentGate.label
@@ -228,7 +240,9 @@ export async function getSiteWorkflowState(
         ? "complete"
         : prestart.releaseCurrent
           ? "current"
-          : "locked",
+          : prestart.onHold
+            ? "blocked"
+            : "locked",
       progress: `${qaReleased}/${qaTotal}`,
     },
     {
@@ -264,10 +278,44 @@ export async function getSiteWorkflowState(
   ];
 
   let nextAction: SiteWorkflowState["nextAction"];
-  let phase: SiteWorkflowState["phase"] = "prestart";
-  let phaseLabel = "Pre-start";
+  // Live work without a current release is a hold: earlier branches still
+  // point at the prerequisite to fix, but the phase shows the job is paused.
+  let phase: SiteWorkflowState["phase"] = prestart.onHold ? "hold" : "prestart";
+  let phaseLabel = prestart.onHold ? "On hold" : "Pre-start";
 
-  if (!prestart.checks[0]?.pass) {
+  if (allQaReleased) {
+    // Installation QA is complete: pre-start changes no longer gate the job.
+    if (handover?.status !== "accepted") {
+      phase = "handover";
+      phaseLabel = "Handover";
+      nextAction = {
+        eyebrow: "Next action",
+        title:
+          handover?.status === "issued"
+            ? "Complete client acceptance"
+            : "Complete project handover",
+        detail:
+          handover?.status === "issued"
+            ? "The handover has been issued and is waiting for client acceptance."
+            : "All QA gates are clear. Finish the handover and issue the client record.",
+        buttonLabel: "Open handover",
+        href: route(projectId, "/handover"),
+        blocked: false,
+      };
+    } else {
+      phase = "complete";
+      phaseLabel = "Complete";
+      nextAction = {
+        eyebrow: "Job complete",
+        title: "Installation record closed",
+        detail:
+          "QA and handover are complete. The final client installation record is ready.",
+        buttonLabel: "Open final QA report",
+        href: route(projectId, "/handover/report"),
+        blocked: false,
+      };
+    }
+  } else if (!prestart.checks[0]?.pass) {
     nextAction = {
       eyebrow: "Job blocked",
       title: "Job is not authorised for site start",
@@ -359,25 +407,32 @@ export async function getSiteWorkflowState(
       blocked: !canManageJob(role),
     };
   } else if (!prestart.releaseCurrent) {
+    const canRelease = role === "owner" || role === "supervisor";
     nextAction = {
-      eyebrow: "Next action",
+      eyebrow: prestart.onHold ? "Job on hold" : "Next action",
       title: prestart.releaseStale
         ? "Re-release pre-start"
-        : prestart.allPass
-          ? "Release pre-start"
-          : "Resolve pre-start blockers",
+        : prestart.releaseState === "withdrawn"
+          ? "Issue a new pre-start release"
+          : prestart.allPass
+            ? "Release pre-start"
+            : "Resolve pre-start blockers",
       detail: prestart.releaseStale
-        ? "A controlled job input changed after the last release."
-        : prestart.allPass
-          ? "Everything required for site start is ready for final release."
-          : "Open the pre-start screen to see the remaining blockers.",
-      buttonLabel: prestart.allPass || prestart.releaseStale
-        ? "Open pre-start"
+        ? `Changed since release: ${prestart.changes.join(", ")}.${prestart.onHold ? " QA is paused until a new release is issued." : ""}`
+        : prestart.releaseState === "withdrawn"
+          ? "The previous release was withdrawn."
+          : prestart.allPass
+            ? "Everything required for site start is ready for final release."
+            : "Open the pre-start screen to see the remaining blockers.",
+      buttonLabel: prestart.allPass
+        ? canRelease
+          ? "Open pre-start"
+          : "View pre-start"
         : "View blockers",
       href: route(projectId, "/prestart"),
-      blocked: !prestart.allPass && !prestart.releaseStale,
+      blocked: !prestart.allPass || !canRelease,
     };
-  } else if (!allQaReleased) {
+  } else {
     phase = "installation";
     phaseLabel = "Installation";
 
@@ -429,35 +484,6 @@ export async function getSiteWorkflowState(
         blocked: false,
       };
     }
-  } else if (handover?.status !== "accepted") {
-    phase = "handover";
-    phaseLabel = "Handover";
-    nextAction = {
-      eyebrow: "Next action",
-      title:
-        handover?.status === "issued"
-          ? "Complete client acceptance"
-          : "Complete project handover",
-      detail:
-        handover?.status === "issued"
-          ? "The handover has been issued and is waiting for client acceptance."
-          : "All QA gates are clear. Finish the handover and issue the client record.",
-      buttonLabel: "Open handover",
-      href: route(projectId, "/handover"),
-      blocked: false,
-    };
-  } else {
-    phase = "complete";
-    phaseLabel = "Complete";
-    nextAction = {
-      eyebrow: "Job complete",
-      title: "Installation record closed",
-      detail:
-        "QA and handover are complete. The final client installation record is ready.",
-      buttonLabel: "Open final QA report",
-      href: route(projectId, "/handover/report"),
-      blocked: false,
-    };
   }
 
   return {
