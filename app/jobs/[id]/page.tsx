@@ -110,6 +110,16 @@ export default async function JobPage({ params }: JobPageProps) {
       </section>
 
       <SiteWorkflow workflow={workflow} />
+      {(role === "supervisor" || role === "installer") ? (
+        <section className="panel">
+          <div className="panel-head"><div><p className="eyebrow">Something happened on site?</p><h2>Tell us what happened</h2></div></div>
+          <div className="site-workflow-grid">
+            <Link className="site-workflow-card is-current" href={`/jobs/${id}/variations`}><span>Something changed</span><strong>Raise a variation</strong><p>Client asked for extra work, scope changed, or something unexpected was found.</p><span className="site-workflow-open">Start →</span></Link>
+            <Link className="site-workflow-card is-current" href={`/jobs/${id}/dayworks`}><span>Extra work done today</span><strong>Fill in daywork</strong><p>Record today&apos;s labour, plant and materials before you leave site.</p><span className="site-workflow-open">Start →</span></Link>
+            <Link className="site-workflow-card is-current" href={`/jobs/${id}/issues`}><span>Something is wrong</span><strong>Report an issue</strong><p>Problem, damage, delay, defect or anything the office needs to know about.</p><span className="site-workflow-open">Start →</span></Link>
+          </div>
+        </section>
+      ) : null}
 
       <section className="detail-grid">
         <article className="detail-card">
