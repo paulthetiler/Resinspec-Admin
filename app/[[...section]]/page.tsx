@@ -562,7 +562,7 @@ export default async function AdminPage({ params }: PageProps) {
   }
 
   return (
-    <AdminShell activeSlug={slug} role={role}>
+    <AdminShell activeSlug={slug} role={role} actualRole={actualRole} previewRole={previewRole}>
       {slug === "" ? <TodayPage role={role} supabase={supabase} /> : <ModulePage slug={slug} />}
     </AdminShell>
   );
