@@ -5,7 +5,7 @@ import { can, type Role } from "@/lib/permissions";
 import { canAccessNav, navigation } from "@/lib/navigation";
 
 type AdminShellProps={activeSlug:string;role:Role;children:ReactNode};
-const roleLabels:Record<Role,string>={owner:"Owner",office:"Office",commercial:"Commercial",supervisor:"Supervisor",installer:"Installer"};
+const roleLabels:Record<Role,string>={owner:"Owner",office:"Project Manager",commercial:"Commercial Manager",supervisor:"Supervisor",installer:"Installer",subcontractor:"Subcontractor"};
 
 export function AdminShell({activeSlug,role,children}:AdminShellProps){
  const visibleNavigation=navigation.filter(item=>canAccessNav(role,item));
