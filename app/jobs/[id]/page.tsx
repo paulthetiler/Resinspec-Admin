@@ -252,7 +252,7 @@ export default async function JobPage({ params }: JobPageProps) {
             </Link>
           ) : null}
 
-          {can(role, "variations:raise") ? (
+          {can(role, "variations:raise") ? (\n            <Link className="job-tool-link" href={`/jobs/${id}/dayworks`}>\n              <span>Site record</span>\n              <strong>Daywork sheet</strong>\n            </Link>\n          ) : null}\n\n          {can(role, "variations:raise") ? (
             <Link className="job-tool-link" href={`/jobs/${id}/variations`}>
               <span>Site change</span>
               <strong>Raise variation</strong>
