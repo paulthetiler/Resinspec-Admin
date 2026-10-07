@@ -91,7 +91,7 @@ O/Of/C/S/I = Owner / Office / Commercial / Supervisor / Installer.
 | `private.current_user_role()` | INVOKER | role from `private.user_roles` for `auth.uid()` where `active = true` |
 | `private.has_role(allowed)` | INVOKER | `current_user_role()` in allowed list; no active role → false |
 | `private.is_owner()` | DEFINER | `user_roles` row for `auth.uid()`, role `owner`, active |
-| `private.can_access_project(id)` | INVOKER | true for Owner/Office/Commercial, or if assigned via `project_assignments` (by `user_id` or via `people.user_id`). No assignment-date condition described |
+| `private.can_access_project(id)` | INVOKER | true for Owner/Office/Commercial, or if `project_assignments.user_id = auth.uid()`, or `project_assignments.person_id → people.user_id = auth.uid()`. Assignment dates not considered |
 | `private.can_manage_project()` | INVOKER | Owner/Office/Commercial |
 | `private.can_view_commercial()` | INVOKER | Owner/Commercial |
 | `private.storage_project_id(path)` | INVOKER | first path segment parsed as UUID; invalid → null |
@@ -104,7 +104,7 @@ O/Of/C/S/I = Owner / Office / Commercial / Supervisor / Installer.
 | `private.refresh_project_commercial_rollup()` / `commercial_rollup_trigger()` | trigger fn | approved variations, invoiced, paid, retention → `project_commercials` |
 | `private.enforce_document_qa_project_match()` | trigger fn | QA-linked document must share the QA record's project |
 | `private.enforce_document_survey_project_match()` | trigger fn | same for surveys |
-| `private.bootstrap_auth_user()` | DEFINER | creates `profiles` row; links matching `people` row **by email**, else creates `people` (`subcontractor`, no role). Assigns no app role |
+| `private.bootstrap_auth_user()` | DEFINER | creates `profiles` row; links an existing `people` row where `people.user_id IS NULL` AND `new.email IS NOT NULL` AND `lower(people.email) = lower(new.email)` (**no `people.active` check**); otherwise creates `people` (`user_id = new.id`, `subcontractor`, `primary_role = null`). Assigns no app role |
 
 Trigger **attachments** (which table/event fires each function) not yet supplied.
 
@@ -159,7 +159,7 @@ RLS:
 ### Operational consequence confirmed (not security)
 
 - `approve_technical_system` retires the previously approved revision with the same code. Live jobs still pointing at the retired revision then fail the pre-start "approved system" check and the Gate 4 `status = 'approved'` check in the app, and their pre-start snapshot goes stale (see first audit, pre-start deadlock).
-- `can_access_project` (as described) has no assignment-date condition: access continues after `ends_on` until the assignment row is removed.
+- Assignment expiry is not considered by `can_access_project`: an assigned Supervisor/Installer retains database project access until the assignment row is removed, regardless of `starts_on` / `ends_on`.
 
 ### Application ↔ database mismatches (functional)
 
@@ -170,7 +170,7 @@ RLS:
 
 ### UNVERIFIED
 
-- **Self-sign-up + email link (highest priority).** `bootstrap_auth_user` links a new auth user to an existing `people` row by email. `can_access_project` grants access via `people.user_id` assignments regardless of app role. If a person who has project assignments but no login self-registers (or someone controlling that mailbox does), they would gain `can_access_project` on those jobs, and with it QA/readings/snags write access, document/RAMS read and site-issue rights, without the Owner issuing a login or role. Needed: trigger attachment (on insert or on confirmation), the exact link condition (email match only? only when `people.user_id is null`? only active people?), and confirmation that sign-up is still open.
+- **Self-sign-up + email link (highest priority; pending trigger attachment only).** Verified from the function bodies: `bootstrap_auth_user` links a new Auth account to an existing `people` row where `people.user_id IS NULL` and the email matches case-insensitively, with no `people.active` check; `can_access_project` grants access through `project_assignments.person_id → people.user_id = auth.uid()`. Therefore, **if** `bootstrap_auth_user` is attached to `auth.users` creation, public self-registration with the email address of an already-assigned, not-yet-linked person would link that account to the person and inherit their project assignments without Owner-issued access. Only remaining evidence: the `auth.users` trigger attachment. If it fires on `auth.users` INSERT, reclassify as a **PROVEN ACCESS-CONTROL VULNERABILITY** and treat disabling public sign-up as an immediate priority.
 - `get_user_role`: no internal check; depends on EXECUTE grant to `authenticated` and on `private.user_roles` SELECT grants/RLS for INVOKER callers. If callable and `user_roles` readable, any user can enumerate other users' roles (low impact, information disclosure).
 - `private.user_roles` grants and RLS (also governs whether INVOKER helpers work and whether rows can be self-written).
 - EXECUTE grants on all public/private functions (especially `get_user_role`; also whether `private.is_owner` / helpers are exposed).
@@ -229,17 +229,16 @@ From `scripts/probe-anon-boundary.sh`, run 7 October 2026:
 | `rpc/current_app_role` as anon | `42501 permission denied`: EXECUTE revoked from anon |
 | Edge Function `admin-create-user` | exists (CORS preflight 204; unknown function returns 404) |
 
-## Evidence still required to close TASK #21
+## Evidence still required to close TASK #21 (final evidence stage)
 
-1. **Trigger attachment list**: table, timing, events and function for every trigger on `public`, `private`, `storage` and `auth.users` tables (catalog section 11).
-2. **`bootstrap_auth_user` link rule**: the exact `people` match condition and whether it fires on `auth.users` INSERT or on email confirmation.
-3. **EXECUTE grants** for all `public` and `private` functions to `anon`, `authenticated`, `public` (section 10), especially `get_user_role`, `set_user_role`, `approve_technical_system`, `is_owner`.
-4. **`private.user_roles`**: table/column grants and RLS policies.
-5. **Constraints**: QA uniqueness per (project, gate) and status checks; status checks on `worker_expenses`, `subcontractor_invoices`, `quotes`, `invoices`, `variations`, `handover_records`, `snags` (section 3).
-6. **`people`**: column grants and any views over it (sections 8, 12).
-7. **Remaining policy details**: `technical_systems` SELECT `TO` role; `documents` INSERT/UPDATE `WITH CHECK`; `project_commercials` write policy; `profiles` columns.
-8. **Auth**: current `disable_signup` value; OAuth clients/scopes for `resinspec-mcp`.
-9. **Rebuild**: full migration list with statements (or schema-only dump) and whether pre-6-October foundation objects are in migration history.
+1. **Trigger attachment list**: table, timing, events and function for every trigger, especially `auth.users` → `bootstrap_auth_user` (INSERT vs confirmation) and all QA, commercial roll-up, quote, estimate, document-match, audit and status triggers.
+2. **Function EXECUTE grants** to `anon` / `authenticated` / `public`, especially `get_user_role`.
+3. **`private.user_roles`** grants and RLS policies.
+4. **Constraints / status checks**: QA uniqueness per (project, gate) and status values; `worker_expenses`, `subcontractor_invoices`, `quotes`, `invoices`, `variations`, `handover_records`, `snags`.
+5. **`people`** column grants and any views over it.
+6. **Remaining policy details**: `documents` INSERT/UPDATE `WITH CHECK`; `project_commercials` write policy; `profiles` columns/UPDATE scope; `technical_systems` SELECT `TO` role.
+7. **Auth**: current public sign-up state.
+8. **Rebuild**: full migration history with statements (or schema-only dump) and whether pre-6-October foundation objects are included.
 
 ## Still to verify once the baseline exists
 
