@@ -413,4 +413,9 @@ select t.ok(t.err($q$insert into public.prestart_releases (project_id, status)
   '12m release refused for a project that is not won / prestart / live');
 reset role;
 
+select t.ok((select count(*) >= 3 from public.audit_events
+  where table_name = 'prestart_releases' and action = 'INSERT'
+    and project_id = '00000000-0000-0000-0000-000000000001'),
+  'audit trigger still records release inserts alongside the guard');
+
 \echo 'ALL PRESTART DATABASE TESTS PASSED'

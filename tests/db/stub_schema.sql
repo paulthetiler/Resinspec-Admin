@@ -126,10 +126,12 @@ language sql stable as $$
       )
 $$;
 
--- Legacy shape: one row per project, keyed on project_id.
+-- Legacy shape as confirmed on live: uuid id primary key, UNIQUE(project_id)
+-- (one row per project), status text defaulting to 'draft', no status check.
 create table public.prestart_releases (
-  project_id uuid primary key references public.projects(id),
-  status text not null default 'draft' check (status in ('draft', 'released')),
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null unique references public.projects(id),
+  status text not null default 'draft',
   release_note text,
   released_by uuid,
   released_at timestamptz,
@@ -149,6 +151,29 @@ create table public.prestart_releases (
   crew_fingerprint text,
   updated_at timestamptz not null default now()
 );
+
+-- Live has an audit trigger on prestart_releases (AFTER INSERT/UPDATE/DELETE).
+create table public.audit_events (
+  id bigserial primary key,
+  table_name text,
+  action text,
+  project_id uuid,
+  actor uuid,
+  created_at timestamptz not null default now()
+);
+
+create function private.audit_row_change() returns trigger
+language plpgsql security definer as $$
+begin
+  insert into public.audit_events (table_name, action, project_id, actor)
+  values (tg_table_name, tg_op,
+          (to_jsonb(coalesce(new, old)) ->> tg_argv[0])::uuid, auth.uid());
+  return null;
+end $$;
+
+create trigger audit_prestart_releases
+  after insert or update or delete on public.prestart_releases
+  for each row execute function private.audit_row_change('project_id');
 
 alter table public.prestart_releases enable row level security;
 

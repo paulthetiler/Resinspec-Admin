@@ -25,6 +25,48 @@
 begin;
 
 -- ---------------------------------------------------------------------------
+-- 0. Pre-flight: refuse to run against an unexpected shape (rolls back cleanly)
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  col text;
+  col_type text;
+  missing text[] := array[]::text[];
+begin
+  foreach col in array array[
+    'project_id', 'status', 'release_note', 'released_by', 'released_at',
+    'survey_id', 'survey_updated_at', 'system_id', 'system_updated_at',
+    'rams_id', 'rams_updated_at', 'site_id', 'site_updated_at',
+    'programme_start', 'programme_end', 'area_m2', 'scope_summary',
+    'crew_count', 'crew_fingerprint', 'updated_at'
+  ] loop
+    if not exists (
+      select 1 from information_schema.columns
+      where table_schema = 'public' and table_name = 'prestart_releases' and column_name = col
+    ) then
+      missing := array_append(missing, col);
+    end if;
+  end loop;
+
+  if cardinality(missing) > 0 then
+    raise exception 'prestart_releases is missing expected columns: %', array_to_string(missing, ', ');
+  end if;
+
+  select data_type into col_type from information_schema.columns
+  where table_schema = 'public' and table_name = 'prestart_releases' and column_name = 'id';
+  if col_type is not null and col_type <> 'uuid' then
+    raise exception 'prestart_releases.id is %, expected uuid', col_type;
+  end if;
+
+  select data_type into col_type from information_schema.columns
+  where table_schema = 'public' and table_name = 'prestart_releases' and column_name = 'crew_fingerprint';
+  if col_type not in ('text', 'character varying') then
+    raise exception 'prestart_releases.crew_fingerprint is %, expected text', col_type;
+  end if;
+end
+$$;
+
+-- ---------------------------------------------------------------------------
 -- 1. Table shape: history rows instead of one row per project
 -- ---------------------------------------------------------------------------
 

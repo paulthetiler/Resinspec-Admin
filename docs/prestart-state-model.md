@@ -117,7 +117,11 @@ The app now depends on the migration:
 - it inserts releases instead of upserting.
 
 Apply `supabase/migrations/20261008090000_prestart_release_history.sql`
-first, then deploy the app. Until the new app is deployed, the old app's upsert
+first, then deploy the app. The migration starts with a pre-flight check
+(expected columns present, `id` uuid, `crew_fingerprint` text) and aborts with
+nothing applied if the live table differs. Live shape confirmed before PR:
+`id` uuid PK, `status` text default `draft`, `UNIQUE(project_id)`, audit
+trigger only, audited RLS. Until the new app is deployed, the old app's upsert
 fails safely: no unique constraint on `project_id` remains, so its upsert is
 rejected.
 
