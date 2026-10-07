@@ -12,12 +12,12 @@ export function AdminShell({activeSlug,role,children}:AdminShellProps){
  const canCreate=can(role,"jobs:edit");
  return <div className="app-shell">
   <aside className="sidebar">
-   <div className="brand-block"><Link className="brand" href="/" aria-label="ResinSpec Admin home"><span className="brand-mark" aria-hidden="true"><i/><i/><i/></span><span><strong>ResinSpec</strong><small>ADMIN</small></span></Link><p>Operations system</p></div>
+   <div className="brand-block"><Link className="brand" href="/" aria-label="ResinSpec Admin home"><img className="admin-logo" src="/resinspec-logo.svg" alt="ResinSpec Flooring" /><span className="admin-label">ADMIN</span></Link><p>Operations system</p></div>
    <nav className="side-nav" aria-label="Admin navigation">{visibleNavigation.map(item=>{const href=item.slug?`/${item.slug}`:"/";return <Link key={item.slug||"today"} href={href} className={item.slug===activeSlug?"nav-item is-active":"nav-item"}><span className="nav-dot"/><span>{item.label}</span></Link>})}</nav>
    <div className="sidebar-foot"><span className="status-dot"/><span><strong>Supabase connected</strong><small>Role access enforced</small></span></div>
   </aside>
   <div className="workspace">
-   <header className="topbar"><Link className="mobile-brand" href="/"><span className="brand-mark mobile-brand-mark" aria-hidden="true"><i/><i/><i/></span><span><strong>ResinSpec</strong><small>ADMIN</small></span></Link><div className="user-controls"><div className="user-chip"><span className="avatar">{roleLabels[role].slice(0,2).toUpperCase()}</span><span><strong>Signed in</strong><small>{roleLabels[role]}</small></span></div><form action="/auth/signout" method="post"><button className="signout-button" type="submit">Sign out</button></form></div></header>
+   <header className="topbar"><Link className="mobile-brand" href="/"><img className="admin-logo mobile-admin-logo" src="/resinspec-logo.svg" alt="ResinSpec Flooring" /><span className="admin-label mobile-admin-label">ADMIN</span></Link><div className="user-controls"><div className="user-chip"><span className="avatar">{roleLabels[role].slice(0,2).toUpperCase()}</span><span><strong>Signed in</strong><small>{roleLabels[role]}</small></span></div><form action="/auth/signout" method="post"><button className="signout-button" type="submit">Sign out</button></form></div></header>
    <main className="main-content">{children}</main>
    <nav className="mobile-nav" aria-label="Mobile admin navigation">
     <Link href="/" className={activeSlug===""?"is-active":""}><span className="mobile-nav-icon">⌂</span><span>Home</span></Link>
