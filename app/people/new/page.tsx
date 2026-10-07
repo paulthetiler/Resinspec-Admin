@@ -85,6 +85,23 @@ export default async function NewPersonPage({
             <input name="insurance_expiry" type="date" />
           </label>
 
+
+          <div className="section-divider field-wide">
+            <span>Subcontractor / CIS compliance</span>
+          </div>
+
+          <label className="field"><span>Trading name</span><input name="trading_name" placeholder="e.g. Steve's Contract Services" /></label>
+          <label className="field"><span>UTR</span><input name="utr" inputMode="numeric" autoComplete="off" /></label>
+          <label className="field"><span>NI number</span><input name="ni_number" autoComplete="off" /></label>
+          <label className="field"><span>Company number</span><input name="company_number" /></label>
+          <label className="field"><span>CIS verification number</span><input name="cis_verification_number" /></label>
+          <label className="field"><span>CIS deduction rate</span><select name="cis_deduction_rate" defaultValue=""><option value="">Not verified</option><option value="0">0% — gross</option><option value="20">20% — standard</option><option value="30">30% — higher</option></select></label>
+          <label className="field"><span>CIS verified on</span><input name="cis_verified_on" type="date" /></label>
+          <label className="field"><span>Status checked on</span><input name="status_checked_on" type="date" /></label>
+          <label className="field"><span>Employment-status outcome</span><select name="status_outcome" defaultValue=""><option value="">Not checked</option><option value="self_employed">Self-employed</option><option value="employed">Employee</option><option value="undetermined">Undetermined</option><option value="review_required">Review required</option></select><small>Record the real working arrangement. CIS registration alone does not decide status.</small></label>
+          <label className="field"><span>Subcontract agreement signed</span><input name="contract_signed_on" type="date" /></label>
+          <label className="field field-wide"><span>Contractor / status notes</span><textarea name="contractor_notes" rows={3} placeholder="Project-based engagement, ability to accept/decline work, own business costs, rectification responsibility, CEST reference/notes..." /></label>
+
           <label className="field field-wide">
             <span>Training / competence notes</span>
             <textarea name="training_notes" rows={4} placeholder="Systems trained on, practical sign-off, tickets..." />
