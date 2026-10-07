@@ -7,13 +7,13 @@ export default async function JobsLayout({
 }: {
   children: ReactNode;
 }) {
-  const { role } = await requireAnyPermission([
+  const { role, actualRole, previewRole } = await requireAnyPermission([
     "jobs:view_all",
     "jobs:view_assigned",
   ]);
 
   return (
-    <AdminShell activeSlug="jobs" role={role}>
+    <AdminShell activeSlug="jobs" role={role} actualRole={actualRole} previewRole={previewRole}>
       {children}
     </AdminShell>
   );
