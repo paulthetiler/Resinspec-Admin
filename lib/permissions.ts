@@ -3,7 +3,8 @@ export type Role =
   | "office"
   | "commercial"
   | "supervisor"
-  | "installer";
+  | "installer"
+  | "subcontractor";
 
 export type Permission =
   | "dashboard:view"
