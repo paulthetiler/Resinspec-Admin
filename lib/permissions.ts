@@ -129,6 +129,17 @@ export const rolePermissions: Record<Role, Permission[]> = {
     "issues:submit",
     "issues:review",
   ],
+  subcontractor: [
+    "jobs:view_assigned",
+    "technical:view",
+    "documents:view",
+    "qa:view",
+    "qa:complete",
+    "variations:raise",
+    "expenses:submit",
+    "issues:submit",
+    "invoices:submit",
+  ],
   installer: [
     "jobs:view_assigned",
     "survey:view",
