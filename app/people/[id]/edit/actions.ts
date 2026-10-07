@@ -49,6 +49,17 @@ export async function updatePerson(formData: FormData) {
       insurance_expiry: optionalText(formData.get("insurance_expiry")),
       training_notes: optionalText(formData.get("training_notes")),
       operational_notes: optionalText(formData.get("operational_notes")),
+      trading_name: optionalText(formData.get("trading_name")),
+      utr: optionalText(formData.get("utr")),
+      ni_number: optionalText(formData.get("ni_number")),
+      company_number: optionalText(formData.get("company_number")),
+      cis_verification_number: optionalText(formData.get("cis_verification_number")),
+      cis_deduction_rate: optionalNumber(formData.get("cis_deduction_rate")),
+      cis_verified_on: optionalText(formData.get("cis_verified_on")),
+      status_checked_on: optionalText(formData.get("status_checked_on")),
+      status_outcome: optionalText(formData.get("status_outcome")),
+      contract_signed_on: optionalText(formData.get("contract_signed_on")),
+      contractor_notes: optionalText(formData.get("contractor_notes")),
       updated_at: now,
     })
     .eq("id", personId);
