@@ -252,6 +252,13 @@ export default async function JobPage({ params }: JobPageProps) {
             </Link>
           ) : null}
 
+          {can(role, "variations:raise") ? (
+            <Link className="job-tool-link" href={`/jobs/${id}/variations`}>
+              <span>Site change</span>
+              <strong>Raise variation</strong>
+            </Link>
+          ) : null}
+
           {can(role, "commercial:view") ? (
             <>
               <Link className="job-tool-link" href={`/jobs/${id}/estimate`}>
@@ -261,10 +268,6 @@ export default async function JobPage({ params }: JobPageProps) {
               <Link className="job-tool-link" href={`/jobs/${id}/commercial`}>
                 <span>Commercial</span>
                 <strong>Job financials</strong>
-              </Link>
-              <Link className="job-tool-link" href={`/jobs/${id}/variations`}>
-                <span>Commercial</span>
-                <strong>Variations</strong>
               </Link>
               <Link className="job-tool-link" href={`/jobs/${id}/invoices`}>
                 <span>Commercial</span>
