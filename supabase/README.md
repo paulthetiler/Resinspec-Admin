@@ -1,6 +1,6 @@
 # ResinSpec Admin — Supabase database baseline
 
-Status: **baseline NOT yet captured; RLS, storage, functions and triggers reviewed; grants/constraints pending; TASK #21 open. Immediate remediation flagged: disable public sign-up** (7 October 2026).
+Status: **baseline NOT yet captured; RLS, storage, functions, triggers and function grants reviewed; user_roles/constraints/people grants pending; TASK #21 open. Immediate remediation flagged: disable public sign-up** (7 October 2026).
 
 The live Supabase project (`vsizfxdtmlxygjnlcztf`, eu-west-2) holds the schema,
 RLS policies, triggers, RPCs, storage buckets/policies and three Edge Functions.
@@ -121,7 +121,19 @@ O/Of/C/S/I = Owner / Office / Commercial / Supervisor / Installer.
 | `prestart_releases`, `handover_records`, `snags`, `site_readings`, `batch_logs` | audit only | no workflow enforcement |
 | `projects`, `project_assignments`, `project_commercials`, `rams_*`, `surveys`, `technical_systems` | audit | audit |
 
-## Audit classification (fifth evidence set, 7 October 2026)
+## Verified function EXECUTE grants (sixth evidence set, 7 October 2026)
+
+| Function | anon | authenticated | public | Internal guard |
+| --- | --- | --- | --- | --- |
+| `public.approve_technical_system(uuid)` | no | yes | no | requires Owner (`has_role`) |
+| `public.set_user_role(...)` | no | yes | no | requires Owner (`private.is_owner()`) |
+| `public.current_app_role()` | no | yes | no | caller's own role |
+| `public.get_user_role(uuid)` | no | yes | no | **none** |
+| `private.is_owner()` | no | yes | no | caller's own role |
+| `can_access_project`, `can_manage_project`, `can_view_commercial`, `current_user_role`, `has_role`, `storage_project_id` | executable | executable | executable | evaluate caller's context only; grant no table access by themselves |
+| `audit_row_change`, `bootstrap_auth_user`, `commercial_rollup_trigger`, `estimate_header_rollup_trigger`, `estimate_item_rollup_trigger`, `quote_status_transition`, `refresh_estimate_totals`, `refresh_project_commercial_rollup` | no | no | no | trigger/internal only |
+
+## Audit classification (sixth evidence set, 7 October 2026)
 
 Evidence: anonymous probe plus read-only extracts supplied by the owner via the
 Supabase connector. No test users created; no live data modified.
@@ -140,7 +152,8 @@ Authorisation helpers:
 - `can_access_project`: global only for Owner/Office/Commercial; Supervisor and Installer need an assignment.
 - `can_manage_project` = Owner/Office/Commercial; `can_view_commercial` = Owner/Commercial.
 - A user with no active role fails `has_role`, `can_manage_project`, `can_view_commercial`, and gets no global project access.
-- `set_user_role` and `approve_technical_system` enforce Owner inside the function.
+- `set_user_role` and `approve_technical_system` are callable by authenticated users but enforce Owner inside the function; not callable by `anon`.
+- Trigger and roll-up functions (including `bootstrap_auth_user`, `quote_status_transition`, roll-ups, `audit_row_change`) are not directly executable by `anon` / `authenticated` / `public`.
 - `storage_project_id` rejects non-UUID path prefixes.
 - `bootstrap_auth_user` assigns no app role (sign-up cannot create a privileged user directly).
 
@@ -183,6 +196,7 @@ Database mechanisms proven wired (structural level; not every business transitio
 8. **Public email sign-up enabled** (`disable_signup: false`, last checked 7 Oct). Now an access-control issue in combination with the auth trigger (finding 1), not only a configuration weakness.
 9. **Leaked Password Protection disabled.**
 10. **Database not reproducible from the repository.**
+11. **Low-severity information disclosure: `get_user_role`.** Executable by every authenticated user; body returns the active role for any supplied `target_user_id` with no Owner, management, self or project check. Any authenticated user who knows another user's UUID can learn that user's ResinSpec role. It cannot modify roles. Caveat: the function is SECURITY INVOKER, so the effective result also depends on the caller's SELECT access to `private.user_roles` (outstanding item 1); if that table only exposes the caller's own row, the disclosure would be limited in practice.
 
 ### Operational consequence confirmed (not security)
 
@@ -198,9 +212,7 @@ Database mechanisms proven wired (structural level; not every business transitio
 
 ### UNVERIFIED
 
-- `get_user_role`: no internal check; depends on EXECUTE grant to `authenticated` and on `private.user_roles` SELECT grants/RLS for INVOKER callers. If callable and `user_roles` readable, any user can enumerate other users' roles (low impact, information disclosure).
 - `private.user_roles` grants and RLS (also governs whether INVOKER helpers work and whether rows can be self-written).
-- EXECUTE grants on all public/private functions (especially `get_user_role`; also whether `private.is_owner` / helpers are exposed).
 - Constraints: QA uniqueness per (project, gate) and status values; expense/CIS/quote/invoice/variation/handover/snag status checks.
 - `people`: any view or column revoke over sensitive fields.
 - `technical_systems` SELECT policy `TO` role: the "approved" branch has no role condition; whether a role-less authenticated user can read approved systems.
@@ -257,13 +269,12 @@ From `scripts/probe-anon-boundary.sh`, run 7 October 2026:
 
 ## Evidence still required to close TASK #21
 
-1. **Function EXECUTE grants** to `anon` / `authenticated` / `public`, especially `get_user_role`.
-2. **`private.user_roles`** grants and RLS policies.
-3. **Constraints / status CHECKs**: QA uniqueness per (project, gate) and status values; `worker_expenses`, `subcontractor_invoices`, `quotes`, `invoices`, `variations`, `handover_records`, `snags`.
-4. **`people`** column grants and any views over it.
-5. **Remaining policy details**: `documents` INSERT/UPDATE `WITH CHECK`; `project_commercials` write policy; `profiles` columns/UPDATE scope; `technical_systems` SELECT `TO` role.
-6. **Auth**: current public sign-up state.
-7. **Rebuild**: full migration history with statements (or schema-only dump) and whether pre-6-October foundation objects are included.
+1. **`private.user_roles`**: table grants and RLS policies (also settles the effective reach of `get_user_role`).
+2. **Constraints / status CHECKs**: QA uniqueness per (project, gate) and status values; `worker_expenses`, `subcontractor_invoices`, `quotes`, `invoices`, `variations`, `handover_records`, `snags`.
+3. **`people`** column grants and any views over it.
+4. **Remaining policy details**: `documents` INSERT/UPDATE `WITH CHECK`; `project_commercials` write policy; `profiles` columns/UPDATE scope; `technical_systems` SELECT `TO` role.
+5. **Auth**: current public sign-up setting.
+6. **Rebuild**: full migration history with statements (or schema-only dump) and whether pre-6-October foundation objects are included.
 
 ## Still to verify once the baseline exists
 
