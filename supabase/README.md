@@ -1,6 +1,6 @@
 # ResinSpec Admin — Supabase database baseline
 
-Status: **baseline NOT yet captured; RLS, storage, functions, triggers and function grants reviewed; user_roles/constraints/people grants pending; TASK #21 open. Immediate remediation flagged: disable public sign-up** (7 October 2026).
+Status: **TASK #21 CLOSED (7 October 2026).** Final verdict below. Baseline not yet captured into the repository; six evidence items remain as non-blocking follow-up.
 
 The live Supabase project (`vsizfxdtmlxygjnlcztf`, eu-west-2) holds the schema,
 RLS policies, triggers, RPCs, storage buckets/policies and three Edge Functions.
@@ -8,6 +8,37 @@ None of these have ever been committed to this repository. The audit session
 that created this folder had only the public publishable key, which cannot read
 schema or policy definitions. Live facts below were confirmed separately through
 the Supabase connector by the project owner.
+
+## TASK #21 final verdict
+
+**Verdict: the database security boundary is substantially in place, but it does not enforce ResinSpec's business workflow. One proven access-control vulnerability needs immediate action, and the database cannot be rebuilt from this repository.**
+
+- Roles, commercial isolation, notification isolation, Owner-only role/system administration, private storage and the Edge Functions are controlled at database level.
+- The 8-gate QA workflow, snag acceptance, pre-start release, handover progression and expense/CIS payment states are enforced only in Next.js server actions. Any user with project access can bypass them through the Supabase API. Changes are audited, not prevented.
+- Public self-sign-up, combined with the `auth.users` bootstrap trigger, lets whoever controls an assigned person's mailbox inherit that person's project access without Owner-issued access.
+- Sensitive people data (NI/UTR/CIS) and Supervisor storage reads are broader than intended.
+- No schema, migrations, policies, functions, storage policies or Edge Function source are in source control.
+
+All findings are proven from live definitions and policy text supplied read-only via the Supabase connector, plus anonymous probing. No behaviour was executed against production, no test users were created, and no live data was modified or exported.
+
+### Remediation priority (proven findings)
+
+| Priority | # | Finding | Remediation direction (not implemented) |
+| --- | --- | --- | --- |
+| **P0 Immediate** | 1 | Public self-sign-up + `resinspec_auth_user_created` → `bootstrap_auth_user` links by email (no `active` check) and inherits the person's project assignments via `can_access_project` | Disable public sign-up now (Auth setting; Owner-issued logins via `admin-create-user` are unaffected). Then stop auto-linking on sign-up, or require Owner-issued/active people. |
+| **P1 High** | 2 | 8-gate QA state machine not enforced at database level (`qa_records` INSERT/UPDATE = project access; audit trigger only) | TASK #23: DB-side transition rules (trigger or SECURITY DEFINER RPC) for order, completion-before-acceptance, evidence, reviewer role, completer ≠ reviewer, accepted-gate immutability; narrow direct UPDATE |
+| P1 High | 3 | `snags`, `site_readings`, `batch_logs` writable by any project-access user; Installers can self-accept snags (defeats Gate 8) | Restrict status/acceptance columns to reviewers; lock evidence rows once the dependent gate is accepted |
+| P1 High | 4 | Pre-start and handover business-state rules not database-enforced (audit triggers only) | Validate pre-start readiness and handover progression (QA released, snags accepted) server-side in the database |
+| P1 High | 5 | `people` NI/UTR/CIS/status fields readable by Office, Commercial, Supervisor (not project-scoped for Supervisor) | Move sensitive fields to a restricted table or revoke column grants; expose via role-checked view/RPC |
+| P1 High | 6 | Supervisor can read `worker-receipts` and `site-issues` objects for unassigned projects | Add project-access condition (`can_access_project(storage_project_id(name))`) to the Supervisor branch |
+| P1 High | 7 | Assignment end dates do not revoke project access (`can_access_project` ignores `starts_on`/`ends_on`) | Honour assignment dates in `can_access_project` (and treat inactive people as unassigned) |
+| P1 High | 8 | Leaked Password Protection disabled | Enable in Auth settings |
+| P1 High | 9 | Live database cannot be rebuilt from the repository | Run `scripts/capture-db-baseline.sh` with a read-only role; commit schema, policies, functions, triggers, storage config and Edge Function source; record Auth config |
+| P2 Medium | 10 | Expense / CIS invoice status transitions not enforced (management UPDATE allows e.g. `pending`/`rejected` → `paid`, amount edits) | Transition rules in DB; lock rows once paid |
+| P3 Low | 11 | `get_user_role` discloses any user's role to any authenticated user (INVOKER; effective reach pending `user_roles` policies) | Restrict to Owner/self or revoke from `authenticated` |
+| P3 Low | 12 | Functional app↔DB mismatches: Office/Commercial handover controls fail at submit; Commercial can update CIS invoices in DB but not in app; notifications accept arbitrary `href`; assignment-only storage uploads block unassigned Owner/Office | Align app permissions and policies; constrain `href` to relative paths |
+
+Related operational defect confirmed (not security): `approve_technical_system` retires the prior revision, which breaks pre-start/Gate 4 checks on live jobs still using it (see first audit).
 
 ## Confirmed live facts (via Supabase connector, 7 October 2026)
 
@@ -176,7 +207,10 @@ Database mechanisms proven wired (structural level; not every business transitio
 - `documents` BEFORE triggers prevent QA- or survey-linked documents from belonging to another project.
 - Audit triggers record changes on QA, pre-start, handover, snags, readings, batches, projects, assignments, commercials, RAMS, surveys, technical systems, quotes, estimates, variations, invoices and documents (they record; they do not prevent).
 
-### PROVEN VULNERABILITY / DESIGN-INTEGRITY GAP
+### PROVEN VULNERABILITIES / DESIGN GAPS
+
+(Numbering here is by discovery; see the remediation priority table above for ranking.)
+
 
 1. **PROVEN ACCESS-CONTROL VULNERABILITY: self-sign-up inherits project access (immediate remediation: disable public sign-up).** Chain, all verified:
    1. a `people` row has an email, `user_id IS NULL`, and a `project_assignments` row via `person_id`;
@@ -210,7 +244,7 @@ Database mechanisms proven wired (structural level; not every business transitio
 - `user_notifications` INSERT lets Office/Commercial send any user a notification with an arbitrary `href` (rendered as a link). Low risk.
 - Storage uploads to `worker-receipts` / `site-issues` / `cis-invoices` require an **assignment**, not `can_access_project`; Owner/Office/Commercial without an assignment cannot upload there even though the app offers them the forms where they hold submit permissions.
 
-### UNVERIFIED
+### UNVERIFIED FOLLOW-UP ITEMS (non-blocking)
 
 - `private.user_roles` grants and RLS (also governs whether INVOKER helpers work and whether rows can be self-written).
 - Constraints: QA uniqueness per (project, gate) and status values; expense/CIS/quote/invoice/variation/handover/snag status checks.
@@ -267,7 +301,7 @@ From `scripts/probe-anon-boundary.sh`, run 7 October 2026:
 | `rpc/current_app_role` as anon | `42501 permission denied`: EXECUTE revoked from anon |
 | Edge Function `admin-create-user` | exists (CORS preflight 204; unknown function returns 404) |
 
-## Evidence still required to close TASK #21
+## Follow-up evidence (non-blocking; TASK #21 closed without it)
 
 1. **`private.user_roles`**: table grants and RLS policies (also settles the effective reach of `get_user_role`).
 2. **Constraints / status CHECKs**: QA uniqueness per (project, gate) and status values; `worker_expenses`, `subcontractor_invoices`, `quotes`, `invoices`, `variations`, `handover_records`, `snags`.
