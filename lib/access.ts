@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { can, type Permission, type Role } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
@@ -10,13 +11,13 @@ const validRoles: Role[] = [
   "installer",
 ];
 
-export async function getAccessContext() {
+export const getAccessContext = cache(async () => {
   const supabase = await createClient();
   const { data } = await supabase.rpc("current_app_role");
   const role = validRoles.includes(data as Role) ? (data as Role) : null;
 
   return { supabase, role };
-}
+});
 
 export async function requireAnyPermission(permissions: Permission[]) {
   const context = await getAccessContext();
