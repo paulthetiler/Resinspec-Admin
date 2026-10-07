@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAnyPermission } from "@/lib/access";
 import { getPrestartState } from "@/lib/prestart";
+import { canReleasePrestart, releaseBlockReason } from "@/lib/prestart-state";
 
 function optionalText(value: FormDataEntryValue | null) {
   const text = String(value ?? "").trim();
@@ -21,132 +22,71 @@ function refresh(projectId: string) {
   revalidatePath(`/jobs/${projectId}/qa`);
 }
 
-async function assertPrestartStillEditable(
-  supabase: Awaited<ReturnType<typeof requireAnyPermission>>["supabase"],
-  projectId: string
-) {
-  const { data, error } = await supabase
-    .from("qa_records")
-    .select("status")
-    .eq("project_id", projectId)
-    .eq("hold_point", "Substrate accepted")
-    .maybeSingle();
-
-  if (error) prestartError(projectId, error.message);
-
-  if (data && data.status !== "open") {
-    prestartError(
-      projectId,
-      "Pre-start is locked once QA Gate 1 has begun. Record later changes through the live-job QA / variation process."
-    );
-  }
-}
-
+// Issues a NEW release. The database (prestart_release_guard) re-checks
+// authority and readiness, computes the snapshot, supersedes the previous
+// active release and moves a won job into pre-start. QA progress never blocks
+// a re-release.
 export async function releasePrestart(formData: FormData) {
   const { supabase, role } = await requireAnyPermission(["qa:complete"]);
   const projectId = String(formData.get("project_id") ?? "");
 
   if (!projectId) redirect("/jobs");
 
-  if (role !== "owner" && role !== "supervisor") {
-    prestartError(projectId, "Owner or supervisor pre-start release is required");
-  }
-
-  await assertPrestartStillEditable(supabase, projectId);
-
   const state = await getPrestartState(supabase, projectId);
   if (!state) prestartError(projectId, "Project not found");
 
-  if (!["won", "prestart"].includes(state.project.status)) {
-    prestartError(
-      projectId,
-      "Pre-start can only be released while the project is Won or Pre-start"
-    );
+  if (state.releaseCurrent) {
+    prestartError(projectId, "Pre-start is already released against the current job inputs");
   }
 
-  const failed = state.checks.filter((check) => !check.pass);
-  if (failed.length > 0) {
-    prestartError(
-      projectId,
-      `Pre-start is blocked: ${failed.map((check) => check.label).join(", ")}`
-    );
-  }
+  const blocked = releaseBlockReason({
+    role,
+    projectStatus: state.project.status,
+    failedChecks: state.checks.filter((check) => !check.pass).map((check) => check.label),
+  });
+  if (blocked) prestartError(projectId, blocked);
 
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const userId = claimsData?.claims?.sub ?? null;
-  const now = new Date().toISOString();
-
-  const { error } = await supabase.from("prestart_releases").upsert(
-    {
-      project_id: projectId,
-      status: "released",
-      release_note: optionalText(formData.get("release_note")),
-      released_by: userId,
-      released_at: now,
-      survey_id: state.snapshot.survey_id,
-      survey_updated_at: state.snapshot.survey_updated_at,
-      system_id: state.snapshot.system_id,
-      system_updated_at: state.snapshot.system_updated_at,
-      rams_id: state.snapshot.rams_id,
-      rams_updated_at: state.snapshot.rams_updated_at,
-      site_id: state.snapshot.site_id,
-      site_updated_at: state.snapshot.site_updated_at,
-      programme_start: state.snapshot.programme_start,
-      programme_end: state.snapshot.programme_end,
-      area_m2: state.snapshot.area_m2,
-      scope_summary: state.snapshot.scope_summary,
-      crew_count: state.snapshot.crew_count,
-      crew_fingerprint: state.snapshot.crew_fingerprint,
-      updated_at: now,
-    },
-    { onConflict: "project_id" }
-  );
+  const { error } = await supabase.from("prestart_releases").insert({
+    project_id: projectId,
+    status: "released",
+    release_note: optionalText(formData.get("release_note")),
+  });
 
   if (error) prestartError(projectId, error.message);
-
-  if (state.project.status === "won") {
-    const { error: projectError } = await supabase
-      .from("projects")
-      .update({
-        status: "prestart",
-        next_action: "Prepare job / order materials",
-        updated_at: now,
-      })
-      .eq("id", projectId)
-      .eq("status", "won");
-
-    if (projectError) prestartError(projectId, projectError.message);
-  }
 
   refresh(projectId);
   redirect(`/jobs/${projectId}/prestart?released=1`);
 }
 
-export async function reopenPrestart(formData: FormData) {
+// Withdraws the active release (kept in history). A new release is required
+// before QA can progress again.
+export async function withdrawPrestart(formData: FormData) {
   const { supabase, role } = await requireAnyPermission(["qa:complete"]);
   const projectId = String(formData.get("project_id") ?? "");
 
   if (!projectId) redirect("/jobs");
 
-  if (role !== "owner" && role !== "supervisor") {
-    prestartError(projectId, "Owner or supervisor access required");
+  if (!canReleasePrestart(role)) {
+    prestartError(projectId, "Owner or assigned Supervisor authority is required");
   }
 
-  await assertPrestartStillEditable(supabase, projectId);
+  const reason = optionalText(formData.get("withdrawn_reason"));
+  if (!reason) {
+    prestartError(projectId, "Give a reason for withdrawing the pre-start release");
+  }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("prestart_releases")
-    .update({
-      status: "draft",
-      released_by: null,
-      released_at: null,
-      release_note: optionalText(formData.get("release_note")),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("project_id", projectId);
+    .update({ status: "withdrawn", withdrawn_reason: reason })
+    .eq("project_id", projectId)
+    .eq("status", "released")
+    .select("id");
 
   if (error) prestartError(projectId, error.message);
+  if (!data || data.length === 0) {
+    prestartError(projectId, "There is no active pre-start release to withdraw");
+  }
 
   refresh(projectId);
-  redirect(`/jobs/${projectId}/prestart?reopened=1`);
+  redirect(`/jobs/${projectId}/prestart?withdrawn=1`);
 }

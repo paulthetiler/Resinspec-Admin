@@ -2,14 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAnyPermission } from "@/lib/access";
 import { getPrestartState, type PrestartCheckCode } from "@/lib/prestart";
-import { releasePrestart, reopenPrestart } from "./actions";
+import { canReleasePrestart, releaseBlockReason } from "@/lib/prestart-state";
+import { releasePrestart, withdrawPrestart } from "./actions";
 
 type PrestartPageProps = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{
     error?: string;
     released?: string;
-    reopened?: string;
+    withdrawn?: string;
   }>;
 };
 
@@ -36,7 +37,7 @@ export default async function PrestartPage({
   searchParams,
 }: PrestartPageProps) {
   const { id } = await params;
-  const { error, released, reopened } = await searchParams;
+  const { error, released, withdrawn } = await searchParams;
   const { supabase, role } = await requireAnyPermission([
     "jobs:view_all",
     "jobs:view_assigned",
@@ -45,24 +46,43 @@ export default async function PrestartPage({
   const state = await getPrestartState(supabase, id);
   if (!state) notFound();
 
-  const canRelease = role === "owner" || role === "supervisor";
+  const canRelease = canReleasePrestart(role);
+  const releaseBlocked = releaseBlockReason({
+    role,
+    projectStatus: state.project.status,
+    failedChecks: state.checks.filter((check) => !check.pass).map((check) => check.label),
+  });
 
-  let releasedBy = "—";
-  if (state.release?.released_by) {
-    const { data: profile } = await supabase
+  const actorIds = Array.from(
+    new Set(
+      state.releases
+        .flatMap((row) => [row.released_by, row.withdrawn_by])
+        .filter((value): value is string => Boolean(value))
+    )
+  );
+  const actorNames = new Map<string, string>();
+  if (actorIds.length > 0) {
+    const { data: profiles } = await supabase
       .from("profiles")
-      .select("full_name")
-      .eq("id", state.release.released_by)
-      .maybeSingle();
-    releasedBy = profile?.full_name || "Team member";
+      .select("id, full_name")
+      .in("id", actorIds);
+    for (const profile of profiles || []) {
+      actorNames.set(profile.id, profile.full_name || "Team member");
+    }
   }
+  const actorName = (id: string | null | undefined) =>
+    id ? actorNames.get(id) || "Team member" : "—";
 
   const releasedCount = state.checks.filter((check) => check.pass).length;
-  const controlStatus = state.releaseCurrent
-    ? "released"
-    : state.releaseStale
-      ? "stale"
-      : "blocked";
+  const controlStatus = state.onHold
+    ? "on hold"
+    : state.releaseCurrent
+      ? "released"
+      : state.releaseStale
+        ? "stale"
+        : state.releaseState === "withdrawn"
+          ? "withdrawn"
+          : "not released";
 
   return (
     <div className="standalone-page">
@@ -94,9 +114,9 @@ export default async function PrestartPage({
           Pre-start released. Gate 1 can now be completed when site works begin.
         </p>
       ) : null}
-      {reopened ? (
+      {withdrawn ? (
         <p className="form-success page-error">
-          Pre-start release reopened for review.
+          Pre-start release withdrawn. It is kept in the release history; issue a new release before QA continues.
         </p>
       ) : null}
 
@@ -109,7 +129,7 @@ export default async function PrestartPage({
         </article>
         <article className="detail-card">
           <span>Control status</span>
-          <strong className={`status-badge prestart-${controlStatus}`}>
+          <strong className={`status-badge prestart-${controlStatus.replace(" ", "-")}`}>
             {controlStatus}
           </strong>
         </article>
@@ -123,12 +143,29 @@ export default async function PrestartPage({
         </article>
       </section>
 
-      {state.releaseStale ? (
-        <p className="prestart-stale-note">
-          The job was released previously, but a controlled input has changed
-          since then. Re-check the items below and re-release before starting
-          installation.
-        </p>
+      {state.releaseStale || (state.onHold && !state.releaseCurrent) ? (
+        <div className="prestart-stale-note">
+          <strong>
+            {state.onHold
+              ? "Job on hold: the pre-start release no longer matches the job."
+              : "Pre-start release is stale."}
+          </strong>{" "}
+          {state.releaseStale
+            ? "These controlled inputs changed after the job was released:"
+            : "The last pre-start release was withdrawn."}
+          {state.releaseStale ? (
+            <ul>
+              {state.changes.map((change) => (
+                <li key={change}>{change}</li>
+              ))}
+            </ul>
+          ) : null}
+          <p>
+            {state.onHold
+              ? "Completed QA is kept, but no further QA gate can be completed or released until an Owner or assigned Supervisor re-checks the items below and issues a new release."
+              : "Re-check the items below and issue a new release before starting installation."}
+          </p>
+        </div>
       ) : null}
 
       <section className="panel prestart-panel">
@@ -184,11 +221,17 @@ export default async function PrestartPage({
             <dl className="detail-list">
               <div>
                 <dt>Status</dt>
-                <dd>{state.release.status}</dd>
+                <dd>
+                  {state.releaseCurrent
+                    ? "Released (current)"
+                    : state.releaseStale
+                      ? "Released (stale)"
+                      : state.release.status}
+                </dd>
               </div>
               <div>
                 <dt>Released by</dt>
-                <dd>{releasedBy}</dd>
+                <dd>{actorName(state.release.released_by)}</dd>
               </div>
               <div>
                 <dt>Released at</dt>
@@ -202,7 +245,8 @@ export default async function PrestartPage({
                 <dt>Snapshot</dt>
                 <dd>
                   Survey, system revision, RAMS revision, site record, programme,
-                  area, scope and crew count are frozen against this release.
+                  area, scope and crew allocation are frozen by the database
+                  against each release. Any change makes the release stale.
                 </dd>
               </div>
             </dl>
@@ -233,21 +277,22 @@ export default async function PrestartPage({
                 <span className="pulse" />
                 <div>
                   <strong>Pre-start released</strong>
-                  <p>Gate 1 is permitted to proceed when the site is ready.</p>
+                  <p>QA may proceed while the job inputs match this release.</p>
                 </div>
               </div>
 
-              <form action={reopenPrestart} className="compact-form prestart-action-form">
+              <form action={withdrawPrestart} className="compact-form prestart-action-form">
                 <input type="hidden" name="project_id" value={id} />
                 <label className="field">
-                  <span>Reason for reopening</span>
+                  <span>Reason for withdrawing</span>
                   <input
-                    name="release_note"
-                    placeholder="e.g. programme or system needs re-checking"
+                    name="withdrawn_reason"
+                    required
+                    placeholder="e.g. client changed the programme; re-check before work continues"
                   />
                 </label>
                 <button className="secondary-button" type="submit">
-                  Reopen pre-start
+                  Withdraw release
                 </button>
               </form>
             </>
@@ -259,25 +304,72 @@ export default async function PrestartPage({
                 <textarea
                   name="release_note"
                   rows={4}
-                  placeholder="Anything the site supervisor needs to know before work starts."
+                  placeholder={
+                    state.releaseStale
+                      ? "What changed and why the job is safe to continue."
+                      : "Anything the site supervisor needs to know before work starts."
+                  }
                 />
               </label>
               <button
                 className="primary-button full-button"
                 type="submit"
-                disabled={!state.allPass}
+                disabled={Boolean(releaseBlocked)}
               >
-                {state.releaseStale ? "Re-release pre-start" : "Release pre-start"}
+                {state.releaseState === "none" ? "Release pre-start" : "Issue new release"}
               </button>
-              {!state.allPass ? (
-                <p className="qa-support-note">
-                  Release is locked until every readiness check above passes.
-                </p>
+              {releaseBlocked ? (
+                <p className="qa-support-note">{releaseBlocked}.</p>
               ) : null}
             </form>
           )}
         </section>
       </div>
+
+      <section className="panel">
+        <div className="panel-head">
+          <div>
+            <p className="eyebrow">Audit trail</p>
+            <h2>Release history</h2>
+          </div>
+          <span className="count-badge">{state.releases.length}</span>
+        </div>
+
+        {state.releases.length > 0 ? (
+          <div className="stack-list">
+            {state.releases.map((row) => (
+              <div className="stack-row" key={row.id}>
+                <span>
+                  <strong>
+                    {localDateTime(row.released_at)} · {actorName(row.released_by)}
+                  </strong>
+                  <small>
+                    {row.release_note || "No release note"}
+                    {row.status === "withdrawn"
+                      ? ` · withdrawn ${localDateTime(row.withdrawn_at)} by ${actorName(row.withdrawn_by)}${row.withdrawn_reason ? `: ${row.withdrawn_reason}` : ""}`
+                      : ""}
+                    {row.status === "superseded"
+                      ? ` · superseded ${localDateTime(row.superseded_at)}`
+                      : ""}
+                  </small>
+                </span>
+                <span className="status-badge">
+                  {row.status === "released"
+                    ? state.releaseCurrent
+                      ? "current"
+                      : "stale"
+                    : row.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state compact-empty">
+            <strong>No releases yet.</strong>
+            <p>Every release is kept here permanently, including withdrawn and superseded ones.</p>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
