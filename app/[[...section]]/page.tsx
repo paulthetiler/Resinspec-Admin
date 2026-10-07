@@ -550,7 +550,7 @@ export default async function AdminPage({ params }: PageProps) {
   const item = navigation.find((navItem) => navItem.slug === slug);
   if (!item) notFound();
 
-  const { supabase, role } = await getAccessContext();
+  const { supabase, role, actualRole, previewRole } = await getAccessContext();
 
   if (!role || !["owner", "office", "commercial", "supervisor", "installer"].includes(role)) {
     redirect("/unauthorised");
