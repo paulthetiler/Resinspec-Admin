@@ -36,5 +36,5 @@ export async function requireAnyPermission(permissions: Permission[]) {
     redirect("/");
   }
 
-  return { supabase: context.supabase, role: context.role! };
+  return { supabase: context.supabase, role: context.role!, actualRole: context.actualRole, previewRole: context.previewRole };
 }
