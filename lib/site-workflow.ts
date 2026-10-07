@@ -60,11 +60,9 @@ export async function getSiteWorkflowState(
   projectId: string,
   role: Role
 ): Promise<SiteWorkflowState | null> {
-  const prestart = await getPrestartState(supabase, projectId);
-  if (!prestart) return null;
-
-  const [{ data: qaRows, error: qaError }, { data: handover, error: handoverError }] =
+  const [prestart, { data: qaRows, error: qaError }, { data: handover, error: handoverError }] =
     await Promise.all([
+      getPrestartState(supabase, projectId),
       supabase
         .from("qa_records")
         .select("id, hold_point, status")
@@ -75,6 +73,8 @@ export async function getSiteWorkflowState(
         .eq("project_id", projectId)
         .maybeSingle(),
     ]);
+
+  if (!prestart) return null;
 
   if (qaError) throw qaError;
   if (handoverError) throw handoverError;
