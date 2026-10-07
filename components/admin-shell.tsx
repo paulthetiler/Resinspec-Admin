@@ -23,8 +23,8 @@ export function AdminShell({activeSlug,role,children}:AdminShellProps){
     <Link href="/" className={activeSlug===""?"is-active":""}><span className="mobile-nav-icon">⌂</span><span>Home</span></Link>
     <Link href="/jobs" className={activeSlug==="jobs"?"is-active":""}><span className="mobile-nav-icon">▣</span><span>Jobs</span></Link>
     {canCreate?<Link href="/jobs/new" className="mobile-nav-create" aria-label="New project"><span className="mobile-plus">+</span><span>New</span></Link>:<Link href="/documents"><span className="mobile-plus">+</span><span>Site</span></Link>}
-    <Link href="/" className={activeSlug===""?"":"mobile-attention-link"}><span className="mobile-nav-icon">●</span><span>Alerts</span></Link>
-    <Link href={moreHref?`/${moreHref}`:"/"} className={!["","jobs"].includes(activeSlug)?"is-active":""}><span className="mobile-nav-icon">•••</span><span>More</span></Link>
+    <Link href="/alerts" className={activeSlug==="alerts"?"is-active":"mobile-attention-link"}><span className="mobile-nav-icon">●</span><span>Alerts</span></Link>
+    <Link href={moreHref?`/${moreHref}`:"/"} className={!["","jobs","alerts"].includes(activeSlug)?"is-active":""}><span className="mobile-nav-icon">•••</span><span>More</span></Link>
    </nav>
   </div>
  </div>
