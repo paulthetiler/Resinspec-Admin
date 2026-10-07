@@ -204,6 +204,13 @@ export default async function JobPage({ params }: JobPageProps) {
             </Link>
           ) : null}
 
+          {can(role, "invoices:submit") || can(role, "invoices:review") ? (
+            <Link className="job-tool-link" href={`/jobs/${id}/cis-invoices`}>
+              <span>CIS crew</span>
+              <strong>Upload invoice</strong>
+            </Link>
+          ) : null}
+
           {can(role, "qa:view") ? (
             <>
               <Link className="job-tool-link" href={`/jobs/${id}/qa`}>
